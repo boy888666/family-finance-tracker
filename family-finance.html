@@ -830,8 +830,9 @@ function noPermission(){
 
 // 获取当前家庭
 function getCurrentFamily(){
-  if(!currentUser) return FAMILIES[0];
-  return FAMILIES.find(f => f.id === currentUser.familyId) || FAMILIES[0];
+  const defaultFamily = { id: 'fam_1', name: '默认家庭' };
+  if(!currentUser) return FAMILIES[0] || defaultFamily;
+  return FAMILIES.find(f => f.id === currentUser.familyId) || FAMILIES[0] || defaultFamily;
 }
 
 // 检查是否已登录（异步）
@@ -851,6 +852,10 @@ async function checkAuth(){
       } catch(e) {
         // 网络异常时用本地缓存
         FAMILIES = JSON.parse(localStorage.getItem('family_finance_families') || '[]');
+      }
+      
+      // 确保至少有一个家庭数�?      if(FAMILIES.length === 0) {
+        FAMILIES = [{ id: currentFamilyId || 'fam_1', name: '默认家庭' }];
       }
 
       // 从服务端加载业务数据
@@ -901,6 +906,10 @@ async function doLogin(){
       const fRes = await apiFetch('/families');
       FAMILIES = fRes.families || [];
     } catch(e) { FAMILIES = []; }
+    
+    // 确保至少有一个家庭数�?    if(FAMILIES.length === 0) {
+      FAMILIES = [{ id: currentFamilyId || 'fam_1', name: '默认家庭' }];
+    }
 
     // 加载业务数据
     try {
@@ -930,27 +939,34 @@ function showLoginError(msg){
 }
 
 // 显示主界�?function showMainApp(){
-  document.getElementById('loginPage').classList.add('hidden');
-  document.getElementById('userInfo').style.display = 'flex';
-  
-  // 更新用户信息
-  const initial = currentUser.displayName.charAt(0).toUpperCase();
-  document.getElementById('userAvatar').textContent = initial;
-  document.getElementById('userName').textContent = currentUser.displayName;
-  document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '管理�? : '成员';
-  document.getElementById('adminBtn').style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-  document.getElementById('logBtn').style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-  document.getElementById('logNavBtn').style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-  
-  // 更新当前家庭名称
-  const family = getCurrentFamily();
-  document.getElementById('currentFamilyName').textContent = family.name;
-  
-  // 显示家庭中的用户�?  const userCount = USERS.filter(u => u.familyId === currentFamilyId).length;
-  
-  updateMemberIdOptions();
-  renderMemberCards();
-  renderOverview();
+  try {
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('userInfo').style.display = 'flex';
+    
+    // 更新用户信息
+    const displayName = currentUser?.displayName || currentUser?.username || '用户';
+    const initial = displayName.charAt(0).toUpperCase();
+    document.getElementById('userAvatar').textContent = initial;
+    document.getElementById('userName').textContent = displayName;
+    document.getElementById('userRole').textContent = currentUser?.role === 'admin' ? '管理�? : '成员';
+    
+    const isAdmin = currentUser?.role === 'admin';
+    document.getElementById('adminBtn').style.display = isAdmin ? 'inline-block' : 'none';
+    document.getElementById('logBtn').style.display = isAdmin ? 'inline-block' : 'none';
+    document.getElementById('logNavBtn').style.display = isAdmin ? 'inline-block' : 'none';
+    
+    // 更新当前家庭名称
+    const family = getCurrentFamily();
+    document.getElementById('currentFamilyName').textContent = family?.name || '默认家庭';
+    
+    updateMemberIdOptions();
+    renderMemberCards();
+    renderOverview();
+  } catch(e) {
+    console.error('showMainApp error:', e);
+    document.getElementById('loginPage').classList.remove('hidden');
+    showLoginError('加载失败: ' + e.message);
+  }
 }
 
 // 登出
