@@ -1,14 +1,13 @@
 [build]
   publish = "."
   functions = "api"
-  command = "npm install"
+
+[dev]
+  command = "echo 'No build needed'"
+  port = 8888
+  targetPort = 8888
 
 [[redirects]]
   from = "/"
   to = "/family-finance.html"
   status = 200
-
-[dev]
-  command = "echo 'No build step needed'"
-  port = 8888
-  targetPort = 8888
