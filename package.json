@@ -1,0 +1,10 @@
+{
+  "name": "family-finance-api",
+  "version": "1.0.0",
+  "description": "家庭财务管理系统后端 API",
+  "main": "api/login.js",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "@neondatabase/serverless": "^0.9.0"
+  }
+}
