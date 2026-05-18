@@ -1,12 +1,2387 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0;url=family-finance.html">
-    <title>重定向</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭资产负债管理系统</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;background:#f5f6fa;color:#2c2c2a;line-height:1.6}
+  .topbar{background:#fff;border-bottom:1px solid #e8e8e8;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+  .logo{font-size:16px;font-weight:500;color:#2c2c2a}
+  .logo span{color:#185fa5}
+  .nav{display:flex;gap:4px}
+  .nav-btn{padding:6px 16px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:13px;color:#5f5e5a;transition:all .15s}
+  .nav-btn:hover{background:#f1efe8;color:#2c2c2a}
+  .nav-btn.active{background:#e6f1fb;color:#185fa5;font-weight:500}
+  .page{display:none;padding:24px;max-width:1200px;margin:0 auto}
+  .page.active{display:block}
+  .section-title{font-size:15px;font-weight:500;color:#2c2c2a;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .section-title::before{content:'';width:3px;height:16px;background:#185fa5;border-radius:2px;display:inline-block}
+  .card{background:#fff;border-radius:12px;border:0.5px solid #e8e8e8;padding:20px;margin-bottom:20px}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .metric{background:#f5f6fa;border-radius:8px;padding:16px;text-align:center}
+  .metric-label{font-size:12px;color:#888780;margin-bottom:6px}
+  .metric-value{font-size:22px;font-weight:500}
+  .metric-value.up{color:#a32d2d}
+  .metric-value.down{color:#3b6d11}
+  .metric-value.blue{color:#185fa5}
+  .metric-value.warn{color:#854f0b}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#f5f6fa;padding:10px 12px;text-align:left;font-weight:500;color:#5f5e5a;border-bottom:1px solid #e8e8e8;white-space:nowrap}
+  td{padding:10px 12px;border-bottom:0.5px solid #f1efe8;color:#2c2c2a}
+  tr:hover td{background:#fafaf8}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+  .tag-asset{background:#e6f1fb;color:#185fa5}
+  .tag-debt{background:#fcebeb;color:#a32d2d}
+  .tag-income{background:#eaf3de;color:#3b6d11}
+  .tag-expense{background:#faeeda;color:#854f0b}
+  .btn{padding:8px 16px;border-radius:6px;border:0.5px solid #c0d4e8;background:#fff;color:#185fa5;font-size:13px;cursor:pointer;font-weight:500;transition:all .15s}
+  .btn:hover{background:#e6f1fb}
+  .btn-primary{background:#185fa5;color:#fff;border-color:#185fa5}
+  .btn-primary:hover{background:#0c447c}
+  .btn-danger{color:#a32d2d;border-color:#f7c1c1}
+  .btn-danger:hover{background:#fcebeb}
+  .btn-sm{padding:4px 10px;font-size:12px}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px}
+  .form-group{display:flex;flex-direction:column;gap:4px}
+  .form-group label{font-size:12px;color:#5f5e5a;font-weight:500}
+  input,select,textarea{padding:8px 10px;border:0.5px solid #d3d1c7;border-radius:6px;font-size:13px;font-family:inherit;color:#2c2c2a;background:#fff;width:100%}
+  input:focus,select:focus{outline:none;border-color:#185fa5}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:560px;max-height:90vh;overflow-y:auto}
+  .modal-title{font-size:15px;font-weight:500;margin-bottom:20px}
+  .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:16px;border-top:0.5px solid #e8e8e8}
+  .chart-wrap{position:relative;width:100%;height:280px}
+  .progress-bar{height:8px;background:#f1efe8;border-radius:4px;overflow:hidden;margin-top:6px}
+  .progress-fill{height:100%;border-radius:4px;transition:width .5s}
+  .summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid #f1efe8}
+  .summary-row:last-child{border-bottom:none}
+  .badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:500}
+  .net-positive{color:#a32d2d}
+  .net-negative{color:#3b6d11}
+  .tabs{display:flex;gap:2px;background:#f5f6fa;border-radius:8px;padding:3px;margin-bottom:16px;width:fit-content}
+  .tab{padding:5px 16px;border-radius:6px;border:none;background:transparent;font-size:13px;cursor:pointer;color:#5f5e5a;transition:all .15s}
+  .tab.active{background:#fff;color:#2c2c2a;font-weight:500;box-shadow:0 0 0 0.5px #e8e8e8}
+  .ratio-bar{display:flex;height:32px;border-radius:6px;overflow:hidden;margin-bottom:8px}
+  .ratio-fill{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:500;transition:width .5s}
+  .empty-tip{text-align:center;padding:32px;color:#888780;font-size:13px}
+  .tag-lend{background:#fbeaf0;color:#d4537e}
+  @media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}.nav-btn span{display:none}}
+  .num-input{text-align:right;font-variant-numeric:tabular-nums}
+  .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+  .status-normal{background:#3b6d11}
+  .status-overdue{background:#a32d2d}
+  .status-returned{background:#888780}
+  /* 登录页面 */
+  .login-overlay{display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#185fa5 0%,#0c447c 100%);z-index:1000;align-items:center;justify-content:center}
+  .login-box{background:#fff;border-radius:16px;padding:40px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .login-title{font-size:22px;font-weight:600;text-align:center;margin-bottom:8px;color:#2c2c2a}
+  .login-subtitle{font-size:13px;color:#888780;text-align:center;margin-bottom:28px}
+  .login-logo{font-size:36px;text-align:center;margin-bottom:20px}
+  .login-error{background:#fcebeb;color:#a32d2d;padding:10px;border-radius:6px;margin-bottom:16px;font-size:13px;display:none}
+  .login-footer{text-align:center;margin-top:20px;font-size:12px;color:#888780}
+  .user-info{display:flex;align-items:center;gap:8px}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:#185fa5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500}
+  .user-name{font-size:13px;color:#2c2c2a;font-weight:500}
+  .user-role{font-size:11px;color:#888780}
+  .hidden{display:none!important}
+</style>
 </head>
 <body>
-    <p>正在跳转到家庭财务系统...</p>
-    <p>如果未自动跳转，请<a href="family-finance.html">点击这里</a></p>
+
+<!-- 登录页面 -->
+<div class="login-overlay" id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">🏠</div>
+    <div class="login-title">家庭财务管家</div>
+    <div class="login-subtitle">请登录以继续</div>
+    <div class="login-error" id="loginError">用户名或密码错误</div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>用户名</label>
+      <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username" />
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>密码</label>
+      <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:15px" onclick="doLogin()">登 录</button>
+    <div class="login-footer">
+      <div style="margin-top:6px">
+        <button class="btn btn-sm" onclick="initDatabase()" id="initDbBtn" style="color:#888780;border-color:#e0e0e0;font-size:11px">⚙️ 初始化数据库（首次部署点击）</button>
+      </div>
+      <div id="initDbStatus" style="margin-top:6px;font-size:12px;color:#3b6d11;display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function initDatabase() {
+  const btn = document.getElementById('initDbBtn');
+  const status = document.getElementById('initDbStatus');
+  btn.disabled = true;
+  btn.textContent = '初始化中...';
+  status.style.display = 'none';
+  try {
+    const res = await fetch('/.netlify/functions/init', { method: 'POST' });
+    const json = await res.json();
+    if (res.ok) {
+      status.style.color = '#3b6d11';
+      status.textContent = '✅ ' + json.message;
+      status.style.display = 'block';
+    } else {
+      throw new Error(json.error || '初始化失败');
+    }
+  } catch(e) {
+    status.style.color = '#a32d2d';
+    status.textContent = '❌ ' + e.message;
+    status.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = '⚙️ 初始化数据库（首次部署点击）';
+}
+</script>
+
+<!-- 修改当前账户密码弹窗 -->
+<div class="modal-bg" id="modal-self-pass">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">🔑 修改密码</div>
+    <div style="margin-bottom:16px">
+      <div style="background:#e6f1fb;border-radius:6px;padding:10px;margin-bottom:16px;font-size:13px">
+        当前账户：<strong id="sp-user"></strong>
+      </div>
+      <div class="form-group">
+        <label>新密码</label>
+        <input type="password" id="sp-new-pass" placeholder="请输入新密码（至少4位）" />
+      </div>
+      <div class="form-group">
+        <label>确认密码</label>
+        <input type="password" id="sp-confirm-pass" placeholder="再次输入新密码" onkeydown="if(event.key==='Enter')saveSelfPassword()" />
+      </div>
+      <div id="sp-error" style="color:#a32d2d;font-size:13px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('self-pass')">取消</button>
+      <button class="btn btn-primary" onclick="saveSelfPassword()">确认修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- 用户管理弹窗 -->
+<div class="modal-bg" id="modal-user">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-title" id="user-modal-title">用户管理</div>
+    <div id="user-modal-content">
+      <!-- 动态内容 -->
+    </div>
+  </div>
+</div>
+
+<!-- 家庭管理弹窗 -->
+<div class="modal-bg" id="modal-family">
+  <div class="modal">
+    <div class="modal-title" id="family-modal-title">添加家庭</div>
+    <div class="form-row">
+      <div class="form-group"><label>家庭名称</label><input id="f-name" placeholder="如：李家、张家" /></div>
+      <div class="form-group"><label>家庭代号</label><input id="f-code" placeholder="唯一标识符" /></div>
+    </div>
+    <div class="form-group"><label>备注</label><input id="f-note" placeholder="如成员人数、备注信息" /></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('family')">取消</button>
+      <button class="btn btn-primary" onclick="saveFamily()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 操作日志弹窗 -->
+<div class="modal-bg" id="modal-log">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-title">📋 操作日志</div>
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="log-filter-action" onchange="renderLogs()" style="width:130px">
+        <option value="">全部类型</option>
+        <option value="新增">新增</option>
+        <option value="编辑">编辑</option>
+        <option value="删除">删除</option>
+      </select>
+      <select id="log-filter-module" onchange="renderLogs()" style="width:130px">
+        <option value="">全部模块</option>
+        <option value="资产">资产</option>
+        <option value="负债">负债</option>
+        <option value="债权">债权</option>
+        <option value="成员">成员</option>
+        <option value="收支">收支</option>
+        <option value="家庭">家庭</option>
+        <option value="用户">用户</option>
+      </select>
+      <div style="font-size:12px;color:#888780" id="log-count">共 0 条记录</div>
+    </div>
+    <div id="log-list" style="max-height:420px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="clearLogs()">🗑️ 清空日志</button>
+      <button class="btn" onclick="closeModal('log')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 切换家庭弹窗 -->
+<div class="modal-bg" id="modal-switch-family">
+  <div class="modal">
+    <div class="modal-title">切换家庭</div>
+    <div id="switch-family-list" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('switch-family')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">🏠 家庭<span style="color:#185fa5">财务</span>管家</div>
+  <div class="nav" id="mainNav">
+    <button class="nav-btn active" onclick="showPage('overview')">总览</button>
+    <button class="nav-btn" onclick="showPage('assets')">资产</button>
+    <button class="nav-btn" onclick="showPage('debts')">负债</button>
+    <button class="nav-btn" onclick="showPage('income')">收支</button>
+    <button class="nav-btn" onclick="showPage('analysis')">分析</button>
+    <button class="nav-btn" onclick="openLogs()" id="logNavBtn" style="display:none">📋 日志</button>
+  </div>
+  <div class="user-info" id="userInfo" style="display:none">
+    <button class="btn btn-sm" onclick="openSwitchFamily()" id="switchFamilyBtn" style="background:#e6f1fb">
+      🏠 <span id="currentFamilyName">默认家庭</span>
+    </button>
+    <div class="user-avatar" id="userAvatar">U</div>
+    <div>
+      <div class="user-name" id="userName">用户名</div>
+      <div class="user-role" id="userRole">成员</div>
+    </div>
+    <button class="btn btn-sm" onclick="showUserManagement()" id="adminBtn" style="margin-left:8px">⚙️ 用户</button>
+    <button class="btn btn-sm" onclick="openLogs()" id="logBtn" style="margin-left:4px;display:none">📋 日志</button>
+    <button class="btn btn-sm" onclick="doLogout()" style="margin-left:4px">退出</button>
+  </div>
+</div>
+
+<!-- 总览页 -->
+<div id="page-overview" class="page active">
+  <div class="metrics" id="overview-metrics"></div>
+  
+  <!-- 家庭成员卡片 -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="section-title" style="margin:0">家庭成员</div>
+      <button class="btn btn-primary" onclick="openModal('member')">+ 添加成员</button>
+    </div>
+    <div id="member-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px"></div>
+  </div>
+  
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card">
+      <div class="section-title">资产构成</div>
+      <div class="chart-wrap"><canvas id="assetPieChart" role="img" aria-label="资产构成饼图">资产构成图表</canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">负债构成</div>
+      <div class="chart-wrap"><canvas id="debtPieChart" role="img" aria-label="负债构成饼图">负债构成图表</canvas></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card">
+      <div class="section-title">净资产趋势</div>
+      <div class="chart-wrap"><canvas id="netWorthChart" role="img" aria-label="净资产趋势图">净资产趋势图表</canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">月度收支</div>
+      <div class="chart-wrap"><canvas id="incomeChart" role="img" aria-label="月度收支图">月度收支图表</canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">资产负债概览</div>
+    <div id="overview-detail"></div>
+  </div>
+</div>
+
+<!-- 资产页 -->
+<div id="page-assets" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div class="section-title" style="margin:0" id="asset-page-title">资产管理</div>
+    <button class="btn btn-primary" id="asset-add-btn" onclick="openModal('asset')">+ 添加资产</button>
+  </div>
+  <div class="tabs" id="asset-tabs">
+    <button class="tab active" onclick="filterAssets('all')">全部</button>
+    <button class="tab" onclick="filterAssets('不动产')">不动产</button>
+    <button class="tab" onclick="filterAssets('车辆')">车辆</button>
+    <button class="tab" onclick="filterAssets('金融资产')">金融资产</button>
+    <button class="tab" onclick="filterAssets('存款')">存款</button>
+    <button class="tab" onclick="filterAssets('应收债权')">应收债权</button>
+    <button class="tab" onclick="filterAssets('其他')">其他</button>
+  </div>
+  <!-- 常规资产表格 -->
+  <div id="asset-table-wrap">
+    <div class="card">
+      <div class="table-wrap">
+        <table id="asset-table">
+          <thead><tr><th>资产名称</th><th>类别</th><th>当前价值 (¥)</th><th>购入价值 (¥)</th><th>购入日期</th><th>收益率</th><th>备注</th><th>操作</th></tr></thead>
+          <tbody id="asset-tbody"></tbody>
+        </table>
+      </div>
+      <div id="asset-empty" class="empty-tip" style="display:none">暂无资产记录，点击右上角添加</div>
+    </div>
+    <div class="metrics" id="asset-metrics"></div>
+  </div>
+  <!-- 应收债权区域（仅在选中应收债权标签时显示） -->
+  <div id="receivable-table-wrap" style="display:none">
+    <div class="metrics" id="receivable-metrics"></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>借款人</th><th>借款金额</th><th>年利率</th><th>借款日期</th><th>到期日期</th><th>借款天数</th><th>还款状态</th><th>已还金额</th><th>应收利息</th><th>到期本息</th><th>操作</th></tr></thead>
+          <tbody id="receivable-tbody"></tbody>
+        </table>
+      </div>
+      <div id="receivable-empty" class="empty-tip" style="display:none">暂无债权记录，点击右上角添加</div>
+    </div>
+    <div class="card">
+      <div class="section-title">回收进度</div>
+      <div id="receivable-progress"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 负债页 -->
+<div id="page-debts" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div class="section-title" style="margin:0">负债管理</div>
+    <button class="btn btn-primary" onclick="openModal('debt')">+ 添加负债</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="filterDebts('all')">全部</button>
+    <button class="tab" onclick="filterDebts('房贷')">房贷</button>
+    <button class="tab" onclick="filterDebts('车贷')">车贷</button>
+    <button class="tab" onclick="filterDebts('信用卡')">信用卡</button>
+    <button class="tab" onclick="filterDebts('其他借款')">其他借款</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="debt-table">
+        <thead><tr><th>负债名称</th><th>类别</th><th>原始金额</th><th>剩余金额</th><th>应付利息</th><th>到期本息</th><th>起始日</th><th>还款方式</th><th>月还款</th><th>年利率</th><th>到期日</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="debt-tbody"></tbody>
+      </table>
+    </div>
+    <div id="debt-empty" class="empty-tip" style="display:none">暂无负债记录</div>
+  </div>
+  <div class="card">
+    <div class="section-title">还款压力分析</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="debtBarChart" role="img" aria-label="各项负债余额">负债余额图</canvas></div>
+  </div>
+</div>
+
+<!-- 收支页 -->
+<div id="page-income" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div class="section-title" style="margin:0">月度收支</div>
+    <button class="btn btn-primary" onclick="openModal('income')">+ 添加记录</button>
+  </div>
+  <div class="metrics" id="income-metrics"></div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>项目</th><th>类型</th><th>类别</th><th>金额 (¥)</th><th>月份/成员</th><th>备注</th><th>操作</th></tr></thead>
+        <tbody id="income-tbody"></tbody>
+      </table>
+    </div>
+    <div id="income-empty" class="empty-tip" style="display:none">暂无收支记录</div>
+  </div>
+</div>
+
+<!-- 分析页 -->
+<div id="page-analysis" class="page">
+  <div class="card">
+    <div class="section-title">家庭财务健康度</div>
+    <div id="health-panel"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card">
+      <div class="section-title">支出分类占比</div>
+      <div class="chart-wrap"><canvas id="expensePieChart" role="img" aria-label="支出分类占比">支出占比图</canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">资产负债比率</div>
+      <div id="ratio-panel"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">财务建议</div>
+    <div id="advice-panel"></div>
+  </div>
+</div>
+
+<!-- 资产弹窗 -->
+<div class="modal-bg" id="modal-asset">
+  <div class="modal">
+    <div class="modal-title" id="asset-modal-title">添加资产</div>
+    <div class="form-row">
+      <div class="form-group"><label>资产名称</label><input id="a-name" placeholder="例：上海浦东房产" /></div>
+      <div class="form-group"><label>资产类别</label>
+        <select id="a-cat">
+          <option>不动产</option><option>车辆</option><option>金融资产</option><option>存款</option><option>其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>当前市值 (¥)</label><input id="a-val" class="num-input" placeholder="0" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+      <div class="form-group"><label>购入价值 (¥)</label><input id="a-cost" class="num-input" placeholder="0" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>购入日期</label><input id="a-date" type="date" /></div>
+      <div class="form-group"><label>备注</label><input id="a-note" placeholder="可选" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('asset')">取消</button>
+      <button class="btn btn-primary" onclick="saveAsset()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 负债弹窗 -->
+<div class="modal-bg" id="modal-debt">
+  <div class="modal">
+    <div class="modal-title" id="debt-modal-title">添加负债</div>
+    <div class="form-row">
+      <div class="form-group"><label>负债名称</label><input id="d-name" placeholder="例：招商银行房贷" /></div>
+      <div class="form-group"><label>负债类别</label>
+        <select id="d-cat">
+          <option>房贷</option><option>车贷</option><option>信用卡</option><option>消费贷</option><option>亲友借款</option><option>其他借款</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>贷款总额 (¥)</label><input id="d-orig" class="num-input" placeholder="原始贷款金额" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+      <div class="form-group"><label>剩余金额 (¥)</label><input id="d-remain" class="num-input" placeholder="当前未还金额" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>贷款起始日</label><input id="d-start" type="date" placeholder="首次还款日" /></div>
+      <div class="form-group"><label>贷款到期日</label><input id="d-due" type="date" placeholder="贷款结束日期" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>还款方式</label>
+        <select id="d-method">
+          <option>等额本息</option>
+          <option>等额本金</option>
+          <option>先息后本</option>
+          <option>等比递减</option>
+          <option>气球贷</option>
+          <option>一次性还本</option>
+          <option>分期还款</option>
+          <option>随借随还</option>
+          <option>不定额还款</option>
+        </select>
+      </div>
+      <div class="form-group"><label>年利率 (%)</label><input id="d-rate" type="number" step="0.01" placeholder="例：3.5" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>月还款额 (¥)</label><input id="d-monthly" class="num-input" placeholder="每月还款" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+      <div class="form-group"><label>还款状态</label>
+        <select id="d-status"><option>正常还款</option><option>提前还款</option><option>逾期</option><option>已结清</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0"><label>备注</label><input id="d-note" placeholder="可选，如贷款用途等" /></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('debt')">取消</button>
+      <button class="btn btn-primary" onclick="saveDebt()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 应收债权弹窗 -->
+<div class="modal-bg" id="modal-receivable">
+  <div class="modal">
+    <div class="modal-title" id="receivable-modal-title">添加债权记录</div>
+    <div class="form-row">
+      <div class="form-group"><label>借款人姓名</label><input id="r-borrower" placeholder="例：张三" /></div>
+      <div class="form-group"><label>借款金额 (¥)</label><input id="r-amount" class="num-input" placeholder="0" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>已还金额 (¥)</label><input id="r-returned" class="num-input" placeholder="0（默认0）" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+      <div class="form-group"><label>年利率 (%)</label><input id="r-rate" type="number" step="0.01" placeholder="0（无息借款填0）" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>借款日期</label><input id="r-loanDate" type="date" /></div>
+      <div class="form-group"><label>到期日期</label><input id="r-dueDate" type="date" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>还款状态</label>
+        <select id="r-status">
+          <option>未到期</option><option>正常回收中</option><option>逾期未还</option><option>已全额回收</option>
+        </select>
+      </div>
+      <div class="form-group"><label>备注</label><input id="r-note" placeholder="关系、借款原因等（可选）" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('receivable')">取消</button>
+      <button class="btn btn-primary" onclick="saveReceivable()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 成员管理弹窗 -->
+<div class="modal-bg" id="modal-member">
+  <div class="modal">
+    <div class="modal-title" id="member-modal-title">添加家庭成员</div>
+    <div class="form-row">
+      <div class="form-group"><label>成员姓名</label><input id="m-name" placeholder="例：张三" /></div>
+      <div class="form-group"><label>成员角色</label>
+        <select id="m-role">
+          <option>户主</option><option>配偶</option><option>子女</option><option>父母</option><option>兄弟姐妹</option><option>其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>与户主关系</label>
+        <select id="m-relation">
+          <option>本人</option><option>配偶</option><option>子女</option><option>父亲</option><option>母亲</option><option>兄弟</option><option>姐妹</option><option>其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>出生年份</label><input id="m-birth" type="number" placeholder="例：1985" min="1900" max="2030" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>职业状态</label>
+        <select id="m-jobStatus">
+          <option>在职</option><option>自由职业</option><option>退休</option><option>学生</option><option>待业</option>
+        </select>
+      </div>
+      <div class="form-group"><label>月收入贡献 (¥)</label><input id="m-income" class="num-input" placeholder="0（无收入填0）" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+    </div>
+    <div class="form-group"><label>备注</label><input id="m-note" placeholder="如职业、公司、特殊情况等（可选）" /></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('member')">取消</button>
+      <button class="btn btn-primary" onclick="saveMember()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 收支弹窗 -->
+<div class="modal-bg" id="modal-income">
+  <div class="modal">
+    <div class="modal-title">添加收支记录</div>
+    <div class="form-row">
+      <div class="form-group"><label>项目名称</label><input id="i-name" placeholder="例：工资收入" /></div>
+      <div class="form-group"><label>收支类型</label>
+        <select id="i-type" onchange="updateIncomeCategories()">
+          <option value="收入">收入</option><option value="支出">支出</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>类别</label><select id="i-cat"></select></div>
+      <div class="form-group"><label>金额 (¥)</label><input id="i-amount" class="num-input" placeholder="0" onfocus="fmtFocus(this)" onblur="fmtBlur(this)" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>月份</label><input id="i-month" type="month" /></div>
+      <div class="form-group"><label>关联成员</label><select id="i-member"><option value="">无</option></select></div>
+    </div>
+    <div class="form-group"><label>备注</label><input id="i-note" placeholder="可选" /></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('income')">取消</button>
+      <button class="btn btn-primary" onclick="saveIncome()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const INCOME_CATS = ['工资薪酬','奖金福利','兼职收入','投资收益','租金收入','其他收入'];
+const EXPENSE_CATS = ['房贷月供','车贷月供','餐饮伙食','子女教育','医疗健康','交通出行','购物消费','水电物业','保险费用','娱乐休闲','其他支出'];
+
+const DEFAULT_DATA = {
+  members: [
+    {id:1,name:'李建国',role:'户主',relation:'本人',birth:1982,jobStatus:'在职',income:18000,note:'主借款人，公司部门经理'},
+    {id:2,name:'王丽华',role:'配偶',relation:'配偶',birth:1985,jobStatus:'在职',income:12000,note:'国企职员'},
+    {id:3,name:'李小明',role:'子女',relation:'子女',birth:2010,jobStatus:'学生',income:0,note:'小学五年级'},
+  ],
+  assets: [
+    {id:1,name:'自住房产',cat:'不动产',val:2800000,cost:2000000,date:'2018-06-01',note:'上海'},
+    {id:2,name:'家用轿车',cat:'车辆',val:160000,cost:230000,date:'2021-03-15',note:'丰田凯美瑞'},
+    {id:3,name:'A股股票',cat:'金融资产',val:85000,cost:70000,date:'2022-01-10',note:'沪深股市'},
+    {id:4,name:'基金定投',cat:'金融资产',val:48000,cost:40000,date:'2020-05-01',note:'沪深300指数基金'},
+    {id:5,name:'活期存款',cat:'存款',val:80000,cost:80000,date:'2024-01-01',note:'日常备用金'},
+    {id:6,name:'定期存款',cat:'存款',val:200000,cost:200000,date:'2023-12-01',note:'三年期 3.5%'},
+    {id:7,name:'商业保险现金价值',cat:'其他',val:35000,cost:30000,date:'2019-08-01',note:'人寿险'},
+  ],
+  receivables: [
+    {id:1,borrower:'李明（同事）',amount:50000,returned:10000,rate:5,loanDate:'2024-08-01',dueDate:'2025-08-01',status:'正常回收中',note:'因购房临时周转，年利率5%'},
+    {id:2,borrower:'王强（亲戚）',amount:20000,returned:0,rate:0,loanDate:'2025-01-15',dueDate:'2026-01-15',status:'逾期未还',note:'表弟临时急用，免息'},
+  ],
+  debts: [
+    {id:1,name:'招商银行房贷',cat:'房贷',origAmount:2200000,remain:1600000,startDate:'2018-06-01',monthly:8800,rate:3.45,method:'等额本息',due:'2048-06-01',status:'正常还款',note:'30年贷款'},
+    {id:2,name:'工商银行车贷',cat:'车贷',origAmount:92000,remain:42000,startDate:'2023-01-01',monthly:4200,rate:4.9,method:'等额本金',due:'2025-12-01',status:'正常还款',note:'3年分期'},
+    {id:3,name:'建行信用卡分期',cat:'信用卡',origAmount:20000,remain:12000,startDate:'2025-02-01',monthly:2000,rate:18.0,method:'分期还款',due:'2025-08-01',status:'正常还款',note:'消费分期'},
+    {id:4,name:'亲友无息借款',cat:'亲友借款',origAmount:30000,remain:30000,startDate:'2025-01-01',monthly:2500,rate:0,method:'等额还款',due:'2025-12-31',status:'正常还款',note:'朋友周转'},
+  ],
+  income: [
+    {id:1,name:'配偶A工资',type:'收入',cat:'工资薪酬',amount:18000,month:'2026-05',note:'税后',memberId:1},
+    {id:2,name:'配偶B工资',type:'收入',cat:'工资薪酬',amount:12000,month:'2026-05',note:'税后',memberId:2},
+    {id:3,name:'年终奖（分摊）',type:'收入',cat:'奖金福利',amount:3000,month:'2026-05',note:'年奖36000分12个月',memberId:1},
+    {id:4,name:'股票分红',type:'收入',cat:'投资收益',amount:500,month:'2026-05',note:'',memberId:1},
+    {id:5,name:'房贷月供',type:'支出',cat:'房贷月供',amount:8800,month:'2026-05',note:'',memberId:null},
+    {id:6,name:'车贷月供',type:'支出',cat:'车贷月供',amount:4200,month:'2026-05',note:'',memberId:null},
+    {id:7,name:'餐饮伙食',type:'支出',cat:'餐饮伙食',amount:4500,month:'2026-05',note:'3口之家',memberId:null},
+    {id:8,name:'子女教育',type:'支出',cat:'子女教育',amount:3000,month:'2026-05',note:'兴趣班+学费',memberId:3},
+    {id:9,name:'交通出行',type:'支出',cat:'交通出行',amount:1500,month:'2026-05',note:'油费+停车',memberId:null},
+    {id:10,name:'购物消费',type:'支出',cat:'购物消费',amount:2000,month:'2026-05',note:'',memberId:null},
+    {id:11,name:'水电物业',type:'支出',cat:'水电物业',amount:800,month:'2026-05',note:'',memberId:null},
+    {id:12,name:'商业保险',type:'支出',cat:'保险费用',amount:1200,month:'2026-05',note:'全家保险',memberId:null},
+    {id:13,name:'医疗健康',type:'支出',cat:'医疗健康',amount:500,month:'2026-05',note:'',memberId:null},
+    {id:14,name:'娱乐休闲',type:'支出',cat:'娱乐休闲',amount:800,month:'2026-05',note:'',memberId:null},
+  ],
+  logs: []
+};
+
+// 默认家庭
+const DEFAULT_FAMILIES = [
+  {id: 'fam_1', name: '默认家庭', code: 'default', note: '系统默认家庭', createTime: new Date().toISOString()}
+];
+
+// 默认用户
+const DEFAULT_USERS = [
+  {id: 1, username: 'admin', password: 'admin123', displayName: '管理员', role: 'admin', familyId: 'fam_1', memberId: null, createTime: new Date().toISOString()}
+];
+
+// ========== API 配置 ==========
+const API_BASE = '/.netlify/functions/'; // Netlify Functions 正确路径
+let apiToken = null; // JWT token，存于 sessionStorage
+
+// 统一 API 调用封装
+async function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiToken) headers['Authorization'] = 'Bearer ' + apiToken;
+  const res = await fetch(API_BASE + path, { ...options, headers });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    throw new Error('API 返回非 JSON: ' + text.substring(0, 200));
+  }
+  if (!res.ok) throw new Error(json.error || '请求失败');
+  return json;
+}
+
+// ========== 多租户+用户认证系统 ==========
+let FAMILIES = [];
+let USERS = [];
+let currentUser = null;
+let currentFamilyId = null;
+let editingUserId = null;
+let userModalView = 'list'; // 'list' | 'form'
+
+// sessionStorage 存 token
+function saveSession() {
+  if (apiToken) {
+    sessionStorage.setItem('ff_token', apiToken);
+    sessionStorage.setItem('ff_user', JSON.stringify(currentUser));
+    sessionStorage.setItem('ff_familyId', currentFamilyId || currentUser?.familyId || 'fam_1');
+  } else {
+    sessionStorage.removeItem('ff_token');
+    sessionStorage.removeItem('ff_user');
+    sessionStorage.removeItem('ff_familyId');
+  }
+}
+
+async function saveFamilies() {
+  localStorage.setItem('family_finance_families', JSON.stringify(FAMILIES));
+  try {
+    await apiFetch('/api/families', { method: 'GET' });
+  } catch(e) { /* 非关键，静默 */ }
+}
+
+async function saveUsers() {
+  localStorage.setItem('family_finance_users', JSON.stringify(USERS));
+  try {
+    await apiFetch('/api/users?familyId=' + currentFamilyId, { method: 'GET' });
+  } catch(e) { /* 非关键，静默 */ }
+}
+function saveLogs(){localStorage.setItem('family_finance_logs', JSON.stringify(DB.logs));}
+
+async function syncLog(action, module, target, detail) {
+  if (!apiToken) return;
+  try {
+    await apiFetch('/api/data/' + currentFamilyId + '/sync', {
+      method: 'POST',
+      body: JSON.stringify({ type: 'log', data: { action, module, target, detail } })
+    });
+  } catch(e) { /* 网络异常时日志保留本地 */ }
+}
+
+function addLog(action, module, target, detail){
+  if(!currentUser) return;
+  const family = getCurrentFamily();
+  const entry = {
+    id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    time: new Date().toISOString(),
+    userId: currentUser.id,
+    username: currentUser.displayName,
+    familyId: family.id,
+    familyName: family.name,
+    action,   // '新增' | '编辑' | '删除'
+    module,   // '资产' | '负债' | '债权' | '成员' | '收支' | '家庭' | '用户'
+    target,   // 操作对象名称
+    detail    // 额外说明
+  };
+  DB.logs.unshift(entry);
+  // 最多保留500条日志，防止 localStorage 膨胀
+  if(DB.logs.length > 500) DB.logs = DB.logs.slice(0, 500);
+  saveLogs();
+  syncLog(action, module, target, detail); // 异步同步到服务端
+}
+
+function openLogs(){
+  document.getElementById('log-filter-action').value = '';
+  document.getElementById('log-filter-module').value = '';
+  renderLogs();
+  document.getElementById('modal-log').classList.add('open');
+}
+
+function renderLogs(){
+  const actionFilter = document.getElementById('log-filter-action').value;
+  const moduleFilter = document.getElementById('log-filter-module').value;
+  const fd = getCurrentFamilyData();
+  
+  let logs = DB.logs.filter(l => l.familyId === fd.familyId);
+  if(actionFilter) logs = logs.filter(l => l.action === actionFilter);
+  if(moduleFilter) logs = logs.filter(l => l.module === moduleFilter);
+  
+  document.getElementById('log-count').textContent = `共 ${logs.length} 条记录`;
+  const list = document.getElementById('log-list');
+  
+  if(logs.length === 0){
+    list.innerHTML = '<div class="empty-tip">暂无操作记录</div>';
+    return;
+  }
+  
+  const ACTION_COLORS = {'新增':'#3b6d11','编辑':'#185fa5','删除':'#a32d2d'};
+  const ACTION_BG = {'新增':'#eaf3de','编辑':'#e6f1fb','删除':'#fcebeb'};
+  
+  list.innerHTML = logs.slice(0, 200).map(l => {
+    const dt = new Date(l.time);
+    const timeStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    return `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:0.5px solid #f1efe8;align-items:flex-start">
+      <span style="display:inline-block;width:44px;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500;text-align:center;flex-shrink:0;background:${ACTION_BG[l.action]||'#f5f6fa'};color:${ACTION_COLORS[l.action]||'#5f5e5a'}">${l.action}</span>
+      <span style="display:inline-block;width:50px;padding:2px 6px;border-radius:4px;font-size:11px;background:#f5f6fa;color:#5f5e5a;text-align:center;flex-shrink:0">${l.module}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px">${l.target}</div>
+        <div style="font-size:12px;color:#888780;margin-top:2px">${l.detail || ''}</div>
+        <div style="font-size:11px;color:#b8b5ac;margin-top:2px">👤 ${l.username} · 🏠 ${l.familyName}</div>
+      </div>
+      <div style="font-size:11px;color:#b8b5ac;white-space:nowrap;flex-shrink:0;margin-top:2px">${timeStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function clearLogs(){
+  const fd = getCurrentFamilyData();
+  if(!isAdmin()){noPermission();return;}
+  if(!confirm('确定清空当前家庭的所有操作日志？')) return;
+  DB.logs = DB.logs.filter(l => l.familyId !== fd.familyId);
+  saveLogs();
+  renderLogs();
+}
+
+// ========== 权限检查函数 ==========
+
+// 检查用户是否为管理员
+function isAdmin(){
+  return currentUser && currentUser.role === 'admin';
+}
+
+// 检查用户是否有当前家庭的访问权限
+function hasAccess(familyId){
+  if(!currentUser) return false;
+  return currentUser.familyId === familyId;
+}
+
+// 检查用户是否有操作权限（管理员可管理所有家庭，成员只能管理自己的家庭）
+function canManage(){
+  if(isAdmin()) return true;
+  return hasAccess(currentFamilyId);
+}
+
+// 权限提示
+function noPermission(){
+  alert('您没有权限执行此操作');
+}
+
+// 确保操作基于当前家庭的数据
+function getCurrentFamilyData(){
+  if(!currentUser) return null;
+  // 安全兜底：普通用户强制限制为自己的家庭，防止篡改 currentFamilyId 越权
+  const familyId = isAdmin() ? (currentFamilyId || currentUser.familyId) : currentUser.familyId;
+  return {
+    familyId,
+    family: FAMILIES.find(f => f.id === familyId),
+    // 过滤出当前家庭的用户
+    users: USERS.filter(u => u.familyId === familyId),
+    // 过滤出当前家庭的成员（在DB中通过memberId关联）
+    members: DB.members.filter(m => !m.familyId || m.familyId === familyId),
+    assets: DB.assets.filter(a => !a.familyId || a.familyId === familyId),
+    debts: DB.debts.filter(d => !d.familyId || d.familyId === familyId),
+    receivables: DB.receivables.filter(r => !r.familyId || r.familyId === familyId),
+    income: DB.income.filter(i => !i.familyId || i.familyId === familyId)
+  };
+}
+
+// 获取当前家庭
+function getCurrentFamily(){
+  if(!currentUser) return FAMILIES[0];
+  return FAMILIES.find(f => f.id === currentUser.familyId) || FAMILIES[0];
+}
+
+// 检查是否已登录（异步）
+async function checkAuth(){
+  const token = sessionStorage.getItem('ff_token');
+  const savedUser = sessionStorage.getItem('ff_user');
+  if(token && savedUser){
+    try {
+      apiToken = token;
+      currentUser = JSON.parse(savedUser);
+      currentFamilyId = sessionStorage.getItem('ff_familyId') || currentUser.familyId || 'fam_1';
+
+      // 从服务端加载 FAMILIES
+      try {
+        const fRes = await apiFetch('/api/families');
+        FAMILIES = fRes.families || [];
+      } catch(e) {
+        // 网络异常时用本地缓存
+        FAMILIES = JSON.parse(localStorage.getItem('family_finance_families') || '[]');
+      }
+
+      // 从服务端加载业务数据
+      try {
+        const dRes = await apiFetch('/api/data/' + currentFamilyId);
+        DB.members = dRes.data?.members || [];
+        DB.assets = dRes.data?.assets || [];
+        DB.debts = dRes.data?.debts || [];
+        DB.receivables = dRes.data?.receivables || [];
+        DB.income = dRes.data?.income || [];
+        DB.logs = dRes.data?.logs || [];
+        // 同步到本地缓存
+        localStorage.setItem('family_finance_v6', JSON.stringify(DB));
+      } catch(e) {
+        DB = JSON.parse(localStorage.getItem('family_finance_v6') || 'null') || JSON.parse(JSON.stringify(DEFAULT_DATA));
+        DB.logs = JSON.parse(localStorage.getItem('family_finance_logs') || 'null') || DB.logs || [];
+      }
+
+      showMainApp();
+      return true;
+    } catch(e) {
+      apiToken = null;
+      currentUser = null;
+    }
+  }
+  return false;
+}
+
+// 执行登录
+async function doLogin(){
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if(!username || !password){
+    showLoginError('请输入用户名和密码');
+    return;
+  }
+  try {
+    const res = await apiFetch('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+    apiToken = res.token;
+    currentUser = res.user;
+    currentFamilyId = res.user.familyId || 'fam_1';
+    saveSession();
+
+    // 加载 FAMILIES
+    try {
+      const fRes = await apiFetch('/api/families');
+      FAMILIES = fRes.families || [];
+    } catch(e) { FAMILIES = []; }
+
+    // 加载业务数据
+    try {
+      const dRes = await apiFetch('/api/data/' + currentFamilyId);
+      DB.members = dRes.data?.members || [];
+      DB.assets = dRes.data?.assets || [];
+      DB.debts = dRes.data?.debts || [];
+      DB.receivables = dRes.data?.receivables || [];
+      DB.income = dRes.data?.income || [];
+      DB.logs = dRes.data?.logs || [];
+      localStorage.setItem('family_finance_v6', JSON.stringify(DB));
+    } catch(e) {
+      DB = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      DB.logs = [];
+    }
+
+    showMainApp();
+  } catch(e) {
+    showLoginError(e.message || '登录失败，请检查网络');
+  }
+}
+
+function showLoginError(msg){
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// 显示主界面
+function showMainApp(){
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('userInfo').style.display = 'flex';
+  
+  // 更新用户信息
+  const initial = currentUser.displayName.charAt(0).toUpperCase();
+  document.getElementById('userAvatar').textContent = initial;
+  document.getElementById('userName').textContent = currentUser.displayName;
+  document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '管理员' : '成员';
+  document.getElementById('adminBtn').style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+  document.getElementById('logBtn').style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+  document.getElementById('logNavBtn').style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+  
+  // 更新当前家庭名称
+  const family = getCurrentFamily();
+  document.getElementById('currentFamilyName').textContent = family.name;
+  
+  // 显示家庭中的用户数
+  const userCount = USERS.filter(u => u.familyId === currentFamilyId).length;
+  
+  updateMemberIdOptions();
+  renderMemberCards();
+  renderOverview();
+}
+
+// 登出
+function doLogout(){
+  apiToken = null;
+  sessionStorage.removeItem('ff_token');
+  sessionStorage.removeItem('ff_user');
+  sessionStorage.removeItem('ff_familyId');
+  currentUser = null;
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('userInfo').style.display = 'none';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+// ========== 家庭管理 ==========
+function openSwitchFamily(){
+  const list = document.getElementById('switch-family-list');
+  
+  // 普通成员只能看到自己所属的家庭，管理员可以看到所有家庭
+  const visibleFamilies = isAdmin() 
+    ? FAMILIES 
+    : FAMILIES.filter(f => f.id === currentUser.familyId);
+  
+  list.innerHTML = visibleFamilies.map(f => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:${f.id === currentFamilyId ? '#e6f1fb' : '#f5f6fa'};border-radius:8px;cursor:pointer" onclick="${f.id !== currentFamilyId ? `switchFamily('${f.id}')` : ''}">
+      <div>
+        <div style="font-weight:500">${f.name} ${f.id === currentFamilyId ? '✓' : ''}</div>
+        <div style="font-size:12px;color:#888780">${USERS.filter(u=>u.familyId===f.id).length} 个用户</div>
+      </div>
+      ${f.id !== currentFamilyId ? '<button class="btn btn-sm">切换</button>' : '<span style="color:#185fa5;font-size:12px">当前</span>'}
+    </div>
+  `).join('') + `
+    ${currentUser.role === 'admin' ? `<button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="closeModal('switch-family');openFamilyModal()">+ 创建新家庭</button>` : ''}
+  `;
+  document.getElementById('modal-switch-family').classList.add('open');
+}
+
+function switchFamily(familyId){
+  // 权限检查：普通用户只能切换到自己所属的家庭
+  if(!isAdmin() && currentUser.familyId !== familyId){
+    noPermission();
+    return;
+  }
+  currentFamilyId = familyId;
+  saveSession();
+  // 切换家庭时重新加载该家庭的数据
+  loadFamilyData(familyId).then(() => closeModal('switch-family') && showMainApp());
+}
+
+async function loadFamilyData(familyId) {
+  try {
+    const dRes = await apiFetch('/api/data/' + familyId);
+    DB.members = dRes.data?.members || [];
+    DB.assets = dRes.data?.assets || [];
+    DB.debts = dRes.data?.debts || [];
+    DB.receivables = dRes.data?.receivables || [];
+    DB.income = dRes.data?.income || [];
+    DB.logs = dRes.data?.logs || [];
+    localStorage.setItem('family_finance_v6', JSON.stringify(DB));
+  } catch(e) {
+    // 网络异常保留当前本地数据
+  }
+}
+
+function openFamilyModal(editId){
+  if(!isAdmin()){noPermission();return;}
+  window.editingFamilyId = editId || null;
+  const family = editId ? FAMILIES.find(f => f.id === editId) : null;
+  document.getElementById('family-modal-title').textContent = family ? '编辑家庭' : '创建新家庭';
+  document.getElementById('f-name').value = family ? family.name : '';
+  document.getElementById('f-code').value = family ? family.code : '';
+  document.getElementById('f-note').value = family ? (family.note || '') : '';
+  document.getElementById('modal-family').classList.add('open');
+}
+
+function saveFamily(){
+  const name = document.getElementById('f-name').value.trim();
+  const code = document.getElementById('f-code').value.trim() || name.toLowerCase().replace(/\s+/g, '_');
+  if(!name){alert('请填写家庭名称');return;}
+  
+  if(window.editingFamilyId){
+    // 编辑模式：更新现有家庭
+    const idx = FAMILIES.findIndex(f => f.id === window.editingFamilyId);
+    if(idx === -1){alert('家庭不存在');return;}
+    FAMILIES[idx].name = name;
+    FAMILIES[idx].code = code;
+    FAMILIES[idx].note = document.getElementById('f-note').value;
+    addLog('编辑','家庭',name,`修改家庭名称/代号`);
+    saveFamilies();
+    closeModal('family');
+    openFamilyList(); // 刷新列表
+    // 如果修改的是当前家庭，同步更新顶部显示
+    if(window.editingFamilyId === currentFamilyId){
+      document.getElementById('currentFamilyName').textContent = name;
+    }
+    window.editingFamilyId = null;
+  } else {
+    // 新建模式
+    const familyId = 'fam_' + Date.now();
+    FAMILIES.push({
+      id: familyId,
+      name,
+      code,
+      note: document.getElementById('f-note').value,
+      createTime: new Date().toISOString()
+    });
+    addLog('新增','家庭',name,`创建新家庭`);
+    saveFamilies();
+    closeModal('family');
+    openFamilyList();
+    if(confirm('家庭创建成功！是否切换到新家庭？')){
+      switchFamily(familyId);
+    }
+  }
+}
+
+function delFamily(id){
+  // 只有管理员可以删除家庭
+  if(!isAdmin()){noPermission();return;}
+  const family = FAMILIES.find(f => f.id === id);
+  if(!family){alert('家庭不存在');return;}
+  if(FAMILIES.length <= 1){alert('至少保留一个家庭');return;}
+  // 不能删除自己当前所在的家庭（防止误删导致无家可归）
+  if(id === currentFamilyId){alert('不能删除当前所在的家庭，请先切换到其他家庭');return;}
+  if(!confirm(`确定删除家庭"${family.name}"？该家庭下所有用户和数据将被永久移除。`)) return;
+  const delName = family.name;
+  
+  // 删除家庭中的用户
+  USERS = USERS.filter(u => u.familyId !== id);
+  saveUsers();
+  // 删除家庭相关的所有数据（成员、资产、负债、债权、收支）
+  DB.members = DB.members.filter(m => m.familyId !== id);
+  DB.assets = DB.assets.filter(a => a.familyId !== id);
+  DB.debts = DB.debts.filter(d => d.familyId !== id);
+  DB.receivables = DB.receivables.filter(r => r.familyId !== id);
+  DB.income = DB.income.filter(i => i.familyId !== id);
+  save();
+  FAMILIES = FAMILIES.filter(f => f.id !== id);
+  saveFamilies();
+  addLog('删除','家庭',delName,`删除家庭`);
+  
+  openFamilyList(); // 刷新列表
+}
+
+// ========== 用户管理 ==========
+async function showUserManagement(){
+  if(!canManage()){
+    noPermission();
+    return;
+  }
+  closeModal('user');
+  userModalView = 'list';
+  // 重新从 API 拉取最新家庭列表
+  try {
+    const fRes = await apiFetch('/api/families');
+    FAMILIES = fRes.families || [];
+  } catch(e) { /* 保持本地 */ }
+  // 重新拉取用户列表
+  try {
+    const uRes = await apiFetch('/api/users?familyId=' + currentFamilyId);
+    USERS = uRes.users.map(u => ({
+      id: u.id, username: u.username, displayName: u.display_name,
+      role: u.role, familyId: u.family_id, memberId: u.member_id, createTime: u.create_time
+    }));
+    localStorage.setItem('family_finance_users', JSON.stringify(USERS));
+  } catch(e) { /* 保持本地 */ }
+  renderUserModal();
+  document.getElementById('modal-user').classList.add('open');
+}
+
+function renderUserModal(){
+  const content = document.getElementById('user-modal-content');
+  if(userModalView === 'list'){
+    renderUserList(content);
+  } else {
+    renderUserForm(content);
+  }
+}
+
+function renderUserList(container){
+  const familyUsers = USERS.filter(u => u.familyId === currentFamilyId);
+  const family = getCurrentFamily();
+  const myFamily = FAMILIES.find(f => f.id === currentUser?.familyId);
+  
+  // 检查是否为管理员
+  const isAdminUser = currentUser?.role === 'admin';
+  
+  container.innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <span style="font-weight:500">👥 ${myFamily?.name || '家庭'} - 用户管理</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          ${isAdminUser ? `<button class="btn btn-sm" onclick="openFamilyList()" style="background:#e8f4e8">🏠 家庭</button>` : ''}
+          ${isAdminUser ? `<button class="btn btn-primary btn-sm" onclick="openUserForm()">+ 添加用户</button>` : ''}
+        </div>
+      </div>
+      
+      <!-- 权限说明 -->
+      <div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;padding:10px;margin-bottom:12px;font-size:12px">
+        <div style="font-weight:500;margin-bottom:4px">📋 权限说明</div>
+        <div style="color:#666">• 您属于：<strong>${myFamily?.name}</strong></div>
+        <div style="color:#666">• 您的角色：<strong>${isAdminUser ? '👑 管理员' : '👤 普通成员'}</strong></div>
+        <div style="color:#666">• ${isAdminUser ? '可管理本家庭用户和数据' : '仅可查看和操作本家庭数据'}</div>
+      </div>
+      
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${familyUsers.length === 0 ? '<div class="empty-tip">暂无用户</div>' : familyUsers.map(u => {
+          const memberName = u.memberId ? (DB.members.find(m=>m.id===u.memberId)?.name || '') : '';
+          const userFamily = FAMILIES.find(f => f.id === u.familyId);
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f5f6fa;border-radius:8px">
+            <div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-weight:500">${u.displayName}</span>
+                <span style="color:#888780;font-size:12px">@${u.username}</span>
+                ${u.role==='admin' ? '<span style="background:#ffe066;color:#854f0b;font-size:10px;padding:1px 6px;border-radius:3px">管理员</span>' : '<span style="background:#e8e8e8;color:#666;font-size:10px;padding:1px 6px;border-radius:3px">成员</span>'}
+                ${u.id === currentUser?.id ? '<span style="background:#185fa5;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px">我</span>' : ''}
+              </div>
+              <div style="font-size:12px;color:#888780;margin-top:2px">
+                🏠 ${userFamily?.name || '未分配'} 
+                ${memberName ? ' · 👤 ' + memberName : ''}
+              </div>
+            </div>
+            <div style="display:flex;gap:4px">
+              ${isAdminUser && u.id !== currentUser?.id ? `
+                <button class="btn btn-sm" onclick="editUser(${u.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="delUser(${u.id})">删除</button>
+              ` : ''}
+              ${u.id === currentUser?.id ? `
+                <button class="btn btn-sm" onclick="openSelfEdit()">✏️ 修改密码</button>
+              ` : ''}
+              ${!isAdminUser ? '<span style="color:#888780;font-size:12px">无权限</span>' : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    ${!isAdminUser ? `
+      <div style="background:#fcebeb;border-radius:6px;padding:12px;text-align:center;font-size:13px;color:#a32d2d">
+        ⚠️ 只有管理员才能管理用户
+      </div>
+    ` : `
+      <div style="font-size:11px;color:#888780;text-align:center;margin-top:12px">
+        💡 管理员可添加/编辑/删除本家庭用户
+      </div>
+    `}
+  `;
+}
+
+function openUserForm(userId){
+  editingUserId = userId || null;
+  userModalView = 'form';
+  renderUserModal();
+}
+
+function openUserList(){
+  userModalView = 'list';
+  renderUserModal();
+}
+
+function openSelfEdit(){
+  // 打开修改当前账户密码的弹窗
+  const u = USERS.find(x => x.id === currentUser?.id);
+  if(!u) return;
+  document.getElementById('sp-user').textContent = u.displayName + ' (@' + u.username + ')';
+  document.getElementById('sp-new-pass').value = '';
+  document.getElementById('sp-confirm-pass').value = '';
+  document.getElementById('sp-error').textContent = '';
+  document.getElementById('modal-self-pass').classList.add('open');
+}
+
+async function saveSelfPassword(){
+  const newPass = document.getElementById('sp-new-pass').value;
+  const confirmPass = document.getElementById('sp-confirm-pass').value;
+  const errorEl = document.getElementById('sp-error');
+  errorEl.textContent = '';
+  if(!newPass){ errorEl.textContent = '请输入新密码'; return; }
+  if(newPass.length < 4){ errorEl.textContent = '密码至少4个字符'; return; }
+  if(newPass !== confirmPass){ errorEl.textContent = '两次密码不一致'; return; }
+  try {
+    await apiFetch('/api/users/me/password', {
+      method: 'PUT',
+      body: JSON.stringify({ newPassword: newPass })
+    });
+    const idx = USERS.findIndex(x => x.id === currentUser?.id);
+    if(idx !== -1) USERS[idx].password = newPass;
+    saveUsers();
+    closeModal('self-pass');
+    addLog('编辑','用户',currentUser?.displayName,'修改了自己的登录密码');
+    alert('密码修改成功！');
+  } catch(e) {
+    errorEl.textContent = e.message || '修改失败';
+  }
+}
+
+function openFamilyList(){
+  if(!isAdmin()){
+    noPermission();
+    return;
+  }
+  const container = document.getElementById('user-modal-content');
+  
+  container.innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-weight:500">🏠 家庭管理（${FAMILIES.length}个家庭）</span>
+        <button class="btn btn-sm" onclick="openUserList()">返回用户</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${FAMILIES.map(f => {
+          const userCount = USERS.filter(u=>u.familyId===f.id).length;
+          const isCurrent = f.id === currentFamilyId;
+          const canDel = FAMILIES.length > 1 && !isCurrent; // 至少保留1个，且不能删当前家庭
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:${isCurrent?'#e6f1fb':'#f5f6fa'};border-radius:8px">
+            <div>
+              <div style="font-weight:500">${f.name} ${isCurrent?'✓ 当前':''}</div>
+              <div style="font-size:12px;color:#888780">${f.code} · ${userCount} 用户${f.note?' · '+f.note:''}</div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm" onclick="openFamilyModal('${f.id}')" title="编辑家庭名称">✏️ 编辑</button>
+              ${canDel ? `<button class="btn btn-sm btn-danger" onclick="delFamily('${f.id}')">🗑️ 删除</button>` : 
+                `<span style="font-size:12px;color:#888780;padding:4px 8px">${isCurrent?'当前家庭':'唯一家庭'}</span>`}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="closeModal('user');openFamilyModal()">+ 创建新家庭</button>
+    </div>
+  `;
+}
+
+function renderUserForm(container){
+  const u = editingUserId ? USERS.find(x => x.id === editingUserId) : null;
+  const isEdit = !!u;
+  const currentFamily = getCurrentFamily();
+  const adminUser = isAdmin();
+  
+  container.innerHTML = `
+    <div style="margin-bottom:16px">
+      <!-- 所属家庭 -->
+      ${adminUser ? `
+      <div class="form-group">
+        <label>所属家庭</label>
+        <select id="u-familyId">
+          ${FAMILIES.map(f => `<option value="${f.id}" ${(isEdit ? u.familyId : currentFamilyId) === f.id ? 'selected' : ''}>${f.name}</option>`).join('')}
+        </select>
+      </div>
+      ` : `
+      <div style="background:#e6f1fb;border-radius:6px;padding:10px;margin-bottom:16px;font-size:13px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">🏠</span>
+          <div>
+            <div style="font-weight:500">所属家庭</div>
+            <div style="color:#185fa5">${currentFamily?.name || '默认家庭'}</div>
+          </div>
+        </div>
+      </div>
+      `}
+      
+      <div class="form-group"><label>用户名</label>
+        <input id="u-username" placeholder="登录用户名（唯一）" value="${u?.username || ''}" ${isEdit?'disabled style="background:#f5f6fa"':''} />
+      </div>
+      <div class="form-group"><label>显示名称</label>
+        <input id="u-displayName" placeholder="如：李建国" value="${u?.displayName || ''}" />
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>密码 <span style="color:#888780;font-weight:normal">${isEdit?'(留空保持不变)':''}</span></label>
+          <input type="password" id="u-password" placeholder="${isEdit?'不填保持不变':'设置登录密码'}" />
+        </div>
+        <div class="form-group"><label>用户角色</label>
+          <select id="u-role">
+            <option value="admin" ${u?.role==='admin'?'selected':''}>👑 管理员</option>
+            <option value="member" ${u?.role==='member'?'selected':''}>👤 普通成员</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>关联家庭成员</label>
+        <select id="u-memberId"><option value="">无</option></select>
+      </div>
+      
+      <div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;padding:10px;margin-top:12px;font-size:12px">
+        <div style="font-weight:500;margin-bottom:4px">💡 角色说明</div>
+        <div>• <strong>管理员</strong>：可管理用户、编辑所有数据</div>
+        <div>• <strong>普通成员</strong>：仅可查看和操作数据</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="openUserList()">取消</button>
+      <button class="btn btn-primary" onclick="saveUser()">保存</button>
+    </div>
+  `;
+  
+  updateMemberIdOptions();
+  if(u?.memberId) document.getElementById('u-memberId').value = u.memberId;
+  
+  // 家庭选择变化时更新成员列表
+  const familySelect = document.getElementById('u-familyId');
+  if(familySelect){
+    familySelect.addEventListener('change', updateMemberIdOptions);
+  }
+}
+
+function saveUser(){
+  // 权限检查
+  if(!canManage()){
+    noPermission();
+    return;
+  }
+  
+  const adminUser = isAdmin();
+  const username = document.getElementById('u-username').value.trim();
+  const displayName = document.getElementById('u-displayName').value.trim();
+  const password = document.getElementById('u-password').value;
+  const role = document.getElementById('u-role').value;
+  const memberId = document.getElementById('u-memberId').value ? parseInt(document.getElementById('u-memberId').value) : null;
+  
+  if(!username){alert('请填写用户名');return;}
+  if(!displayName){alert('请填写显示名称');return;}
+  
+  // 管理员可选择用户所属家庭，普通成员只能创建到自己的家庭
+  const selectedFamilyId = adminUser ? 
+    (document.getElementById('u-familyId')?.value || currentFamilyId) : 
+    currentFamilyId;
+  
+  if(editingUserId){
+    // 编辑 - 管理员可编辑所有用户，普通成员只能编辑同家庭用户
+    if(!adminUser && USERS.find(u => u.id === editingUserId)?.familyId !== currentFamilyId){
+      noPermission();
+      return;
+    }
+    const idx = USERS.findIndex(u => u.id === editingUserId);
+    if(idx === -1){alert('用户不存在');return;}
+    USERS[idx].displayName = displayName;
+    if(password) USERS[idx].password = password;
+    USERS[idx].role = role;
+    USERS[idx].memberId = memberId;
+    if(adminUser && document.getElementById('u-familyId')) {
+      USERS[idx].familyId = selectedFamilyId;
+    }
+  } else {
+    // 新增
+    if(!password){alert('请设置密码');return;}
+    if(USERS.find(u => u.username === username)){
+      alert('用户名已存在');return;
+    }
+    USERS.push({
+      id: Date.now(),
+      username,
+      password,
+      displayName,
+      role,
+      familyId: selectedFamilyId, // 根据选择绑定到对应家庭
+      memberId,
+      createTime: new Date().toISOString()
+    });
+    const targetFamily = FAMILIES.find(f => f.id === selectedFamilyId);
+    addLog('新增','用户',displayName,`创建用户（${role === 'admin' ? '管理员' : '普通成员'}），所属 ${targetFamily?.name || '未知家庭'}`);
+  }
+  if(editingUserId){
+    const targetFamily = FAMILIES.find(f => f.id === selectedFamilyId);
+    addLog('编辑','用户',displayName,`更新用户信息，角色 ${role === 'admin' ? '管理员' : '普通成员'}`);
+  }
+  saveUsers();
+  showUserManagement();
+}
+
+function editUser(id){
+  if(!canManage()){noPermission();return;}
+  openUserForm(id);
+}
+
+function delUser(id){
+  if(!canManage()){noPermission();return;}
+  if(id === currentUser?.id){alert('不能删除当前登录用户');return;}
+  const u = USERS.find(x => x.id === id);
+  if(!u){alert('用户不存在');return;}
+  // 非管理员只能删除同家庭用户
+  if(!isAdmin() && u.familyId !== currentFamilyId){noPermission();return;}
+  if(!confirm(`确定删除用户"${u.displayName}"？`)) return;
+  const name = u.displayName;
+  USERS = USERS.filter(u => u.id !== id);
+  addLog('删除','用户',name,`删除用户 ${u.username}`);
+  saveUsers();
+  showUserManagement();
+}
+
+// 更新用户管理中的成员选择（根据所选家庭过滤）
+function updateMemberIdOptions(){
+  const selects = document.querySelectorAll('#u-memberId');
+  const familyIdSelect = document.getElementById('u-familyId');
+  const targetFamilyId = familyIdSelect ? familyIdSelect.value : currentFamilyId;
+  // 过滤出对应家庭的成员
+  const familyMembers = DB.members.filter(m => !m.familyId || m.familyId === targetFamilyId);
+  const options = '<option value="">无</option>' + familyMembers.map(m => 
+    `<option value="${m.id}">${m.name}（${m.role}）</option>`
+  ).join('');
+  selects.forEach(s => { if(s) s.innerHTML = options; });
+}
+
+let DB = JSON.parse(localStorage.getItem('family_finance_v6') || 'null') || JSON.parse(JSON.stringify(DEFAULT_DATA));
+// 兼容旧版本数据：确保 members 数组存在
+if(!DB.members) DB.members = [];
+// 兼容旧版本数据：确保 income 项有 memberId 字段
+DB.income.forEach(i => { if(i.memberId === undefined) i.memberId = null; });
+// 加载日志（独立存储，防止与主数据混淆）
+DB.logs = JSON.parse(localStorage.getItem('family_finance_logs') || 'null') || DB.logs || [];
+let editingId = null;
+let currentAssetFilter = 'all';
+let currentDebtFilter = 'all';
+
+// 主数据保存：本地优先 + 异步同步到服务端
+function save(){
+  localStorage.setItem('family_finance_v6', JSON.stringify(DB));
+  if (!apiToken) return;
+  const syncAll = async () => {
+    try {
+      await apiFetch('/api/data/' + currentFamilyId + '/sync', { method: 'POST', body: JSON.stringify({ type: 'members', data: DB.members }) });
+      await apiFetch('/api/data/' + currentFamilyId + '/sync', { method: 'POST', body: JSON.stringify({ type: 'assets', data: DB.assets }) });
+      await apiFetch('/api/data/' + currentFamilyId + '/sync', { method: 'POST', body: JSON.stringify({ type: 'debts', data: DB.debts }) });
+      await apiFetch('/api/data/' + currentFamilyId + '/sync', { method: 'POST', body: JSON.stringify({ type: 'receivables', data: DB.receivables }) });
+      await apiFetch('/api/data/' + currentFamilyId + '/sync', { method: 'POST', body: JSON.stringify({ type: 'income', data: DB.income }) });
+    } catch(e) { /* 静默失败 */ }
+  };
+  syncAll();
+}
+function fmt(n){return '¥'+Math.round(n).toLocaleString('zh-CN')}
+function fmtNum(n){return Math.round(n).toLocaleString('zh-CN')}
+function pct(a,b){return b===0?'0%':(a/b*100).toFixed(1)+'%'}
+
+// 千分位格式化（输入框用）
+function toLocalStr(v){
+  const n=parseFloat(String(v).replace(/,/g,''));
+  if(isNaN(n)||n===0)return '';
+  return n.toLocaleString('zh-CN',{maximumFractionDigits:2});
+}
+function parseNum(v){
+  return parseFloat(String(v).replace(/,/g,''))||0;
+}
+function fmtFocus(el){
+  const raw=parseNum(el.value);
+  if(raw)el.value=raw;
+}
+function fmtBlur(el){
+  const raw=parseNum(el.value);
+  if(raw)el.value=toLocalStr(raw);
+}
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  event.target.classList.add('active');
+  if(p==='overview')renderOverview();
+  if(p==='assets')renderAssets();
+  if(p==='debts')renderDebts();
+  if(p==='income')renderIncome();
+  if(p==='analysis')renderAnalysis();
+}
+
+// 利息计算（单利，按天计算）
+function calcAccruedInterest(r){
+  if(!r.rate || r.rate === 0 || !r.loanDate) return 0;
+  const principal = r.amount - r.returned; // 未还本金作为计息基础
+  if(principal <= 0) return 0;
+  const loanDate = new Date(r.loanDate);
+  const today = new Date();
+  const days = Math.max(0, Math.floor((today - loanDate) / (1000 * 60 * 60 * 24)));
+  return principal * (r.rate / 100) * (days / 365);
+}
+
+// 计算所有应收债权的应计利息
+function calcTotalAccruedInterest(){
+  return DB.receivables.reduce((s,r)=>{
+    if(r.status === '已全额回收') return s;
+    return s + calcAccruedInterest(r);
+  },0);
+}
+
+// 计算单笔负债的应付利息（单利，按天）
+function calcDebtInterest(d){
+  if(!d.rate || d.rate === 0 || !d.startDate) return 0;
+  if(d.status === '已结清') return 0;
+  const principal = d.remain;
+  if(principal <= 0) return 0;
+  const startDate = new Date(d.startDate);
+  const today = new Date();
+  const days = Math.max(0, Math.floor((today - startDate) / (1000 * 60 * 60 * 24)));
+  return principal * (d.rate / 100) * (days / 365);
+}
+
+// 计算所有负债的应付利息
+function calcTotalDebtInterest(){
+  return DB.debts.reduce((s,d)=>{
+    if(d.status === '已结清') return s;
+    return s + calcDebtInterest(d);
+  },0);
+}
+
+function getTotals(){
+  const fd = getCurrentFamilyData();
+  const totalAsset=fd.assets.reduce((s,a)=>s+a.val,0);
+  const totalReceivable=fd.receivables.reduce((s,r)=>s+(r.amount-r.returned),0);
+  const totalReceivableInterest=calcTotalAccruedInterest();
+  const totalDebt=fd.debts.filter(d=>d.status!=='已结清').reduce((s,d)=>s+d.remain,0);
+  const totalDebtInterest=calcTotalDebtInterest();
+  const net=totalAsset+totalReceivable+totalReceivableInterest-totalDebt-totalDebtInterest;
+  const nowIncome=fd.income.filter(i=>i.type==='收入'&&i.month==='2026-05').reduce((s,i)=>s+i.amount,0);
+  const nowExpense=fd.income.filter(i=>i.type==='支出'&&i.month==='2026-05').reduce((s,i)=>s+i.amount,0);
+  const monthlyDebt=fd.debts.filter(d=>d.status!=='已结清').reduce((s,d)=>s+d.monthly,0);
+  return{totalAsset,totalReceivable,totalReceivableInterest,totalDebt,totalDebtInterest,net,nowIncome,nowExpense,monthlyDebt};
+}
+
+let charts={};
+function destroyChart(id){if(charts[id]){charts[id].destroy();charts[id]=null;}}
+
+// 成员角色对应的颜色
+const ROLE_COLORS = {
+  '户主': '#185fa5',
+  '配偶': '#3b6d11',
+  '子女': '#854f0b',
+  '父母': '#533ab7',
+  '兄弟姐妹': '#d4537e',
+  '其他': '#888780'
+};
+
+// 职业状态对应的图标
+const JOB_ICONS = {
+  '在职': '\ud83d\udcbc',
+  '自由职业': '\ud83d\udcbb',
+  '退休': '\ud83c\udfd4',
+  '学生': '\ud83c\udf93',
+  '待业': '\ud83d\uddd1'
+};
+
+// 渲染家庭成员卡片
+function renderMemberCards(members){
+  const container = document.getElementById('member-cards');
+  const displayMembers = members || getCurrentFamilyData().members;
+  if(displayMembers.length === 0){
+    container.innerHTML = '<div class="empty-tip">暂无家庭成员，点击右上角添加</div>';
+    return;
+  }
+  
+  container.innerHTML = displayMembers.map(m => {
+    const color = ROLE_COLORS[m.role] || '#185fa5';
+    const icon = JOB_ICONS[m.jobStatus] || '\ud83d\udc64';
+    const age = m.birth ? new Date().getFullYear() - m.birth : '-';
+    const income = m.income || 0;
+    const incomePct = getTotals().nowIncome > 0 ? (income / getTotals().nowIncome * 100).toFixed(0) : 0;
+    
+    return `<div style="background:#f5f6fa;border-radius:10px;padding:16px;border-left:4px solid ${color}">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
+        <div>
+          <div style="font-size:15px;font-weight:500;color:#2c2c2a">${m.name}</div>
+          <div style="font-size:12px;color:#888780">${m.role} · ${m.relation}</div>
+        </div>
+        <div style="font-size:22px">${icon}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:#5f5e5a;margin-bottom:10px">
+        <div>年龄：${age}岁</div>
+        <div>状态：${m.jobStatus}</div>
+      </div>
+      ${income > 0 ? `
+        <div style="background:#fff;border-radius:6px;padding:8px;margin-bottom:8px">
+          <div style="font-size:11px;color:#888780;margin-bottom:2px">月收入贡献</div>
+          <div style="font-size:14px;font-weight:500;color:#3b6d11">¥${fmtNum(income)} <span style="font-size:11px;color:#888780">(${incomePct}%)</span></div>
+        </div>
+      ` : '<div style="font-size:12px;color:#888780;margin-bottom:8px;text-align:center">无收入贡献</div>'}
+      ${m.note ? `<div style="font-size:11px;color:#888780;margin-bottom:8px">${m.note}</div>` : ''}
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="editMember(${m.id})">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="delMember(${m.id})">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// 保存成员
+function saveMember(){
+  const name = document.getElementById('m-name').value.trim();
+  if(!name){alert('请填写成员姓名');return;}
+  const item = {
+    id: editingId || Date.now(),
+    name,
+    role: document.getElementById('m-role').value,
+    relation: document.getElementById('m-relation').value,
+    birth: parseInt(document.getElementById('m-birth').value) || null,
+    jobStatus: document.getElementById('m-jobStatus').value,
+    income: parseNum(document.getElementById('m-income').value) || 0,
+    note: document.getElementById('m-note').value,
+    familyId: currentFamilyId
+  };
+  if(editingId){
+    const idx = DB.members.findIndex(m => m.id === editingId);
+    DB.members[idx] = {...DB.members[idx], ...item};
+    addLog('编辑','成员',name,`更新成员信息：${item.role}，月收入贡献 ¥${fmtNum(item.income)}`);
+  } else {
+    DB.members.push(item);
+    addLog('新增','成员',name,`添加家庭成员：${item.role}，职业 ${item.jobStatus}`);
+  }
+  save();
+  closeModal('member');
+  renderMemberCards();
+  updateMemberOptions();
+  updateMemberIdOptions(); // 同步更新用户管理中的成员列表
+  // 更新概览明细
+  renderOverview();
+}
+
+// 编辑成员
+function editMember(id){
+  editingId = id;
+  const m = DB.members.find(x => x.id === id);
+  document.getElementById('member-modal-title').textContent = '编辑家庭成员';
+  document.getElementById('m-name').value = m.name;
+  document.getElementById('m-role').value = m.role;
+  document.getElementById('m-relation').value = m.relation;
+  document.getElementById('m-birth').value = m.birth || '';
+  document.getElementById('m-jobStatus').value = m.jobStatus;
+  document.getElementById('m-income').value = m.income ? toLocalStr(m.income) : '';
+  document.getElementById('m-note').value = m.note || '';
+  document.getElementById('modal-member').classList.add('open');
+}
+
+// 删除成员
+function delMember(id){
+  if(!confirm('确定删除该家庭成员？')) return;
+  const m = DB.members.find(m => m.id === id);
+  const name = m ? m.name : '未知成员';
+  DB.members = DB.members.filter(m => m.id !== id);
+  // 同步清除收入记录中对该成员的关联
+  DB.income.forEach(i => { if(i.memberId === id) i.memberId = null; });
+  addLog('删除','成员',name,`删除家庭成员`);
+  save();
+  renderMemberCards();
+  updateMemberOptions();
+  renderOverview();
+}
+
+// 更新收支弹窗中的成员选择
+function updateMemberOptions(){
+  const selects = document.querySelectorAll('#i-member');
+  const fd = getCurrentFamilyData();
+  const options = '<option value="">无</option>' + fd.members.map(m => 
+    `<option value="${m.id}">${m.name}（${m.role}）</option>`
+  ).join('');
+  selects.forEach(s => { s.innerHTML = options; });
+}
+
+function renderOverview(){
+  const fd = getCurrentFamilyData();
+  const{totalAsset,totalReceivable,totalReceivableInterest,totalDebt,totalDebtInterest,net,nowIncome,nowExpense,monthlyDebt}=getTotals();
+  const saved=nowIncome-nowExpense;
+  const totalReceivableWithInterest = totalReceivable + totalReceivableInterest;
+  const totalDebtWithInterest = totalDebt + totalDebtInterest;
+
+  document.getElementById('overview-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">总资产</div><div class="metric-value up">${fmt(totalAsset)}</div></div>
+    <div class="metric"><div class="metric-label">应收债权本息</div><div class="metric-value blue">${fmt(totalReceivableWithInterest)}</div></div>
+    <div class="metric"><div class="metric-label">总负债本金</div><div class="metric-value down">${fmt(totalDebt)}</div></div>
+    <div class="metric"><div class="metric-label">负债应付利息</div><div class="metric-value ${totalDebtInterest>0?'warn':'down'}">${fmt(totalDebtInterest)}</div></div>
+    <div class="metric"><div class="metric-label">负债本息合计</div><div class="metric-value ${totalDebtWithInterest>0?'down':'net-negative'}">${fmt(totalDebtWithInterest)}</div></div>
+    <div class="metric"><div class="metric-label">净资产</div><div class="metric-value blue">${fmt(net)}</div></div>
+    <div class="metric"><div class="metric-label">本月收入</div><div class="metric-value up">${fmt(nowIncome)}</div></div>
+    <div class="metric"><div class="metric-label">本月支出</div><div class="metric-value warn">${fmt(nowExpense)}</div></div>
+    <div class="metric"><div class="metric-label">本月结余</div><div class="metric-value ${saved>=0?'blue':'net-negative'}">${fmt(saved)}</div></div>
+  `;
+
+  // 家庭成员卡片
+  renderMemberCards(fd.members);
+
+  // 资产构成饼图
+  const assetGroups={};
+  fd.assets.forEach(a=>{assetGroups[a.cat]=(assetGroups[a.cat]||0)+a.val});
+  if(totalReceivable>0)assetGroups['应收债权']=totalReceivable;
+  if(totalReceivableInterest>0)assetGroups['债权利息']=totalReceivableInterest;
+  destroyChart('assetPie');
+  charts['assetPie']=new Chart(document.getElementById('assetPieChart'),{
+    type:'doughnut',
+    data:{labels:Object.keys(assetGroups),datasets:[{data:Object.values(assetGroups),backgroundColor:['#185fa5','#3b6d11','#854f0b','#a32d2d','#533ab7','#0f6e56','#d4537e','#e8a317'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:12},padding:8}}}}
+  });
+
+  // 负债构成饼图
+  const debtGroups={};
+  fd.debts.filter(d=>d.status!=='已结清').forEach(d=>{debtGroups[d.cat]=(debtGroups[d.cat]||0)+d.remain});
+  if(totalDebtInterest>0)debtGroups['应付利息']=totalDebtInterest;
+  destroyChart('debtPie');
+  charts['debtPie']=new Chart(document.getElementById('debtPieChart'),{
+    type:'doughnut',
+    data:{labels:Object.keys(debtGroups),datasets:[{data:Object.values(debtGroups),backgroundColor:['#a32d2d','#e24b4a','#f09595','#854f0b','#d4537e','#c17a2b'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:12},padding:8}}}}
+  });
+
+  // 净资产趋势（模拟近12个月）
+  const months=[];const netData=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(2026,4-i,1);
+    months.push((d.getMonth()+1)+'月');
+    netData.push(Math.round(net*(0.92+i*0.007)));
+  }
+  destroyChart('netWorth');
+  charts['netWorth']=new Chart(document.getElementById('netWorthChart'),{
+    type:'line',
+    data:{labels:months,datasets:[{label:'净资产',data:netData,borderColor:'#185fa5',backgroundColor:'rgba(24,95,165,0.08)',tension:0.4,fill:true,borderWidth:2,pointRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万'}}}}
+  });
+
+  // 月度收支图
+  const incMonths=[];const incData=[];const expData=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(2026,4-i,1);
+    const m=(d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'));
+    const mLabel=(d.getMonth()+1)+'月';
+    incMonths.push(mLabel);
+    const inc=fd.income.filter(x=>x.type==='收入'&&x.month===m).reduce((s,x)=>s+x.amount,0)||nowIncome*(0.9+Math.random()*0.2);
+    const exp=fd.income.filter(x=>x.type==='支出'&&x.month===m).reduce((s,x)=>s+x.amount,0)||nowExpense*(0.88+Math.random()*0.22);
+    incData.push(Math.round(inc));expData.push(Math.round(exp));
+  }
+  destroyChart('incomeBar');
+  charts['incomeBar']=new Chart(document.getElementById('incomeChart'),{
+    type:'bar',
+    data:{labels:incMonths,datasets:[
+      {label:'收入',data:incData,backgroundColor:'rgba(59,109,17,0.7)',borderRadius:4},
+      {label:'支出',data:expData,backgroundColor:'rgba(163,45,45,0.7)',borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:12}}}},scales:{y:{ticks:{callback:v=>'¥'+(v/1000).toFixed(0)+'k'}}}}
+  });
+
+  // 概览明细
+  const debtRatio=(totalDebtWithInterest/(totalAsset+totalReceivableWithInterest)*100).toFixed(1);
+  const overdueCount=fd.receivables.filter(r=>r.status==='逾期未还').length;
+  document.getElementById('overview-detail').innerHTML=`
+    <div class="summary-row"><span>资产负债率（含利息）</span><span>${debtRatio}%<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(parseFloat(debtRatio),100)}%;background:${parseFloat(debtRatio)>70?'#a32d2d':parseFloat(debtRatio)>50?'#854f0b':'#3b6d11'}"></div></div></span></div>
+    <div class="summary-row"><span>月均债务偿还</span><span>${fmt(monthlyDebt)}</span></div>
+    <div class="summary-row"><span>债务收入比（月）</span><span>${(monthlyDebt/nowIncome*100).toFixed(1)}%</span></div>
+    <div class="summary-row"><span>月结余率</span><span>${((nowIncome-nowExpense)/nowIncome*100).toFixed(1)}%</span></div>
+    <div class="summary-row"><span>应收债权本息合计</span><span><strong>${fmt(totalReceivableWithInterest)}</strong></span></div>
+    <div class="summary-row"><span>负债本息合计</span><span><strong>${fmt(totalDebtWithInterest)}</strong></span></div>
+    <div class="summary-row"><span>负债应付利息</span><span style="color:#854f0b">${fmt(totalDebtInterest)}</span></div>
+    <div class="summary-row"><span>家庭成员</span><span>${fd.members.length}人（${fd.members.filter(m=>m.jobStatus==='在职').length}人在职）</span></div>
+  `;
+}
+
+function renderAssets(){
+  const fd = getCurrentFamilyData();
+  // 应收债权标签页
+  if(currentAssetFilter==='应收债权'){
+    document.getElementById('asset-table-wrap').style.display='none';
+    document.getElementById('receivable-table-wrap').style.display='block';
+    document.getElementById('asset-page-title').textContent='应收债权管理';
+    document.getElementById('asset-add-btn').textContent='+ 添加债权';
+    document.getElementById('asset-add-btn').setAttribute('onclick',"openModal('receivable')");
+    renderReceivables();
+    return;
+  }
+  document.getElementById('asset-table-wrap').style.display='block';
+  document.getElementById('receivable-table-wrap').style.display='none';
+  document.getElementById('asset-page-title').textContent='资产管理';
+  document.getElementById('asset-add-btn').textContent='+ 添加资产';
+  document.getElementById('asset-add-btn').setAttribute('onclick',"openModal('asset')");
+
+  const filtered=currentAssetFilter==='all'?fd.assets:fd.assets.filter(a=>a.cat===currentAssetFilter);
+  const tbody=document.getElementById('asset-tbody');
+  tbody.innerHTML='';
+  document.getElementById('asset-empty').style.display=filtered.length?'none':'block';
+  filtered.forEach(a=>{
+    const gain=a.val-a.cost;
+    const gainPct=a.cost?((gain/a.cost)*100).toFixed(1):0;
+    const gainColor=gain>=0?'#a32d2d':'#3b6d11';
+    tbody.innerHTML+=`<tr>
+      <td><strong>${a.name}</strong></td>
+      <td><span class="tag tag-asset">${a.cat}</span></td>
+      <td><strong>${fmt(a.val)}</strong></td>
+      <td>${fmt(a.cost)}</td>
+      <td>${a.date}</td>
+      <td style="color:${gainColor}">${gain>=0?'+':''}${fmt(gain)} (${gainPct}%)</td>
+      <td style="color:#888780">${a.note||'-'}</td>
+      <td><button class="btn btn-sm" onclick="editAsset(${a.id})">编辑</button> <button class="btn btn-sm btn-danger" onclick="delAsset(${a.id})">删除</button></td>
+    </tr>`;
+  });
+  const total=filtered.reduce((s,a)=>s+a.val,0);
+  const totalCost=filtered.reduce((s,a)=>s+a.cost,0);
+  document.getElementById('asset-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">资产总值</div><div class="metric-value up">${fmt(total)}</div></div>
+    <div class="metric"><div class="metric-label">总投入成本</div><div class="metric-value">${fmt(totalCost)}</div></div>
+    <div class="metric"><div class="metric-label">浮动盈亏</div><div class="metric-value ${total-totalCost>=0?'up':'down'}">${total-totalCost>=0?'+':''}${fmt(total-totalCost)}</div></div>
+    <div class="metric"><div class="metric-label">综合收益率</div><div class="metric-value blue">${totalCost?((total-totalCost)/totalCost*100).toFixed(1):0}%</div></div>
+  `;
+}
+
+function filterAssets(cat){
+  currentAssetFilter=cat;
+  const cats=['all','不动产','车辆','金融资产','存款','应收债权','其他'];
+  document.querySelectorAll('#asset-tabs .tab').forEach((t,i)=>{
+    t.classList.toggle('active',cats[i]===cat);
+  });
+  renderAssets();
+}
+
+// 应收债权
+function renderReceivables(){
+  const fd = getCurrentFamilyData();
+  const active=fd.receivables.filter(r=>r.status!=='已全额回收');
+  const totalAmt=fd.receivables.reduce((s,r)=>s+r.amount,0);
+  const totalReturned=fd.receivables.reduce((s,r)=>s+r.returned,0);
+  const totalOutstanding=totalAmt-totalReturned;
+  const overdueCount=fd.receivables.filter(r=>r.status==='逾期未还').length;
+  const activeCount=active.length;
+  const totalInterest=calcTotalAccruedInterest();
+
+  document.getElementById('receivable-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">借款总额</div><div class="metric-value warn">¥${fmtNum(totalAmt)}</div></div>
+    <div class="metric"><div class="metric-label">已回收金额</div><div class="metric-value down">¥${fmtNum(totalReturned)}</div></div>
+    <div class="metric"><div class="metric-label">待回收本金</div><div class="metric-value blue">¥${fmtNum(totalOutstanding)}</div></div>
+    <div class="metric"><div class="metric-label">应收利息</div><div class="metric-value ${totalInterest>0?'up':'down'}">¥${fmtNum(totalInterest)}</div></div>
+    <div class="metric"><div class="metric-label">逾期未还</div><div class="metric-value ${overdueCount>0?'up':'down'}">${overdueCount} 笔</div></div>
+  `;
+
+  const tbody=document.getElementById('receivable-tbody');
+  tbody.innerHTML='';
+  document.getElementById('receivable-empty').style.display=fd.receivables.length?'none':'block';
+
+  fd.receivables.forEach(r=>{
+    const outstanding=r.amount-r.returned;
+    const pct=r.amount?(r.returned/r.amount*100).toFixed(0):0;
+    const accruedInterest=calcAccruedInterest(r);
+    const totalWithInterest=outstanding+accruedInterest;
+    const daysSinceLoan=r.loanDate?Math.floor((new Date()-new Date(r.loanDate))/(1000*60*60*24)):0;
+    const statusDot={
+      '正常回收中':'<span class="status-dot status-normal"></span>',
+      '未到期':'<span class="status-dot" style="background:#888780"></span>',
+      '逾期未还':'<span class="status-dot status-overdue"></span>',
+      '已全额回收':'<span class="status-dot status-returned"></span>'
+    }[r.status]||'';
+    const statusColor={'正常回收中':'#3b6d11','未到期':'#5f5e5a','逾期未还':'#a32d2d','已全额回收':'#888780'}[r.status]||'#2c2c2a';
+    tbody.innerHTML+=`<tr>
+      <td><strong>${r.borrower}</strong><br><span style="font-size:11px;color:#888780">${r.note||''}</span></td>
+      <td>¥${fmtNum(r.amount)}</td>
+      <td>${r.rate>0?r.rate+'%':'免息'}</td>
+      <td>${r.loanDate||'-'}</td>
+      <td>${r.dueDate||'-'}</td>
+      <td>${daysSinceLoan}天</td>
+      <td><span style="color:${statusColor};font-weight:500">${statusDot}${r.status}</span></td>
+      <td>¥${fmtNum(r.returned)}<br><span style="font-size:11px;color:#888780">回收率 ${pct}%</span></td>
+      <td style="color:${r.rate>0?'#a32d2d':'#888780'}">${r.rate>0?'¥'+fmtNum(accruedInterest):'—'}</td>
+      <td><strong>¥${fmtNum(totalWithInterest)}</strong></td>
+      <td><button class="btn btn-sm" onclick="editReceivable(${r.id})">编辑</button> <button class="btn btn-sm btn-danger" onclick="delReceivable(${r.id})">删除</button></td>
+    </tr>`;
+  });
+
+  // 回收进度
+  const progressItems=DB.receivables.filter(r=>r.status!=='已全额回收').map(r=>{
+    const pct=r.amount?(r.returned/r.amount*100).toFixed(0):0;
+    const outstanding=r.amount-r.returned;
+    const interest=calcAccruedInterest(r);
+    const color={'正常回收中':'#185fa5','未到期':'#888780','逾期未还':'#a32d2d'}[r.status]||'#185fa5';
+    const sc={'正常回收中':'#3b6d11','未到期':'#5f5e5a','逾期未还':'#a32d2d','已全额回收':'#888780'}[r.status]||'#2c2c2a';
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="font-weight:500">${r.borrower}</span>
+        <span style="color:${sc}">¥${fmtNum(outstanding)} 本金${r.rate>0?' + ¥'+fmtNum(interest)+' 利息':''} · ${r.status}</span>
+      </div>
+      <div class="progress-bar" style="height:10px"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+      ${r.rate>0?`<div style="font-size:11px;color:#a32d2d;text-align:right;margin-top:2px">到期本息合计 ¥${fmtNum(outstanding+interest)}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('receivable-progress').innerHTML=progressItems||'<div class="empty-tip">暂无待回收债权</div>';
+}
+
+function saveReceivable(){
+  const borrower=document.getElementById('r-borrower').value.trim();
+  if(!borrower){alert('请填写借款人姓名');return;}
+  const amount=parseNum(document.getElementById('r-amount').value)||0;
+  if(amount<=0){alert('借款金额需大于0');return;}
+  const item={
+    id:editingId||Date.now(),
+    borrower,
+    amount,
+    returned:parseNum(document.getElementById('r-returned').value)||0,
+    rate:parseFloat(document.getElementById('r-rate').value)||0,
+    loanDate:document.getElementById('r-loanDate').value,
+    dueDate:document.getElementById('r-dueDate').value,
+    status:document.getElementById('r-status').value,
+    note:document.getElementById('r-note').value,
+    familyId: currentFamilyId
+  };
+  if(editingId){
+    const idx=DB.receivables.findIndex(r=>r.id===editingId);
+    DB.receivables[idx]={...DB.receivables[idx],...item};
+    addLog('编辑','债权',borrower,`更新债权记录，借款 ¥${fmtNum(amount)}`);
+  }else{
+    DB.receivables.push(item);
+    addLog('新增','债权',borrower,`添加债权记录，借款 ¥${fmtNum(amount)}`);
+  }
+  save();closeModal('receivable');renderReceivables();
+}
+
+function editReceivable(id){
+  editingId=id;
+  const r=DB.receivables.find(x=>x.id===id);
+  document.getElementById('receivable-modal-title').textContent='编辑债权记录';
+  document.getElementById('r-borrower').value=r.borrower;
+  document.getElementById('r-amount').value=r.amount?toLocalStr(r.amount):'';
+  document.getElementById('r-returned').value=r.returned?toLocalStr(r.returned):'';
+  document.getElementById('r-rate').value=r.rate||'';
+  document.getElementById('r-loanDate').value=r.loanDate||'';
+  document.getElementById('r-dueDate').value=r.dueDate||'';
+  document.getElementById('r-status').value=r.status;
+  document.getElementById('r-note').value=r.note||'';
+  document.getElementById('modal-receivable').classList.add('open');
+}
+
+function delReceivable(id){
+  if(!confirm('确定删除该债权记录？'))return;
+  const r = DB.receivables.find(x=>x.id===id);
+  const name = r ? r.borrower : '未知';
+  DB.receivables=DB.receivables.filter(r=>r.id!==id);
+  addLog('删除','债权',name,`删除债权记录`);
+  save();renderReceivables();
+}
+
+function renderDebts(){
+  const fd = getCurrentFamilyData();
+  const filtered=currentDebtFilter==='all'?fd.debts:fd.debts.filter(d=>d.cat===currentDebtFilter);
+  const tbody=document.getElementById('debt-tbody');
+  tbody.innerHTML='';
+  document.getElementById('debt-empty').style.display=filtered.length?'none':'block';
+  let totalDebtInterestAll = 0;
+  filtered.forEach(d=>{
+    const statusColor={'正常还款':'#3b6d11','逾期':'#a32d2d','提前还款':'#185fa5','已结清':'#888780'}[d.status]||'#2c2c2a';
+    const paidPct=d.origAmount?(100-d.remain/d.origAmount*100).toFixed(0):0;
+    const methodBadge=d.method?'<span style="font-size:11px;color:#888780">'+d.method+'</span>':'';
+    const debtInterest = calcDebtInterest(d);
+    totalDebtInterestAll += debtInterest;
+    const totalWithInterest = d.remain + debtInterest;
+    const daysSince = d.startDate?Math.floor((new Date()-new Date(d.startDate))/(1000*60*60*24)):0;
+    tbody.innerHTML+=`<tr>
+      <td><strong>${d.name}</strong></td>
+      <td><span class="tag tag-debt">${d.cat}</span></td>
+      <td style="color:#888780">${d.origAmount?'¥'+fmtNum(d.origAmount):'-'}</td>
+      <td><strong style="color:#a32d2d">¥${fmtNum(d.remain)}</strong></td>
+      <td style="color:${d.rate>0?'#854f0b':'#888780'}">${d.rate>0?'¥'+fmtNum(debtInterest):'—'}</td>
+      <td><strong>¥${fmtNum(totalWithInterest)}</strong></td>
+      <td>${d.startDate||'-'}</td>
+      <td>${methodBadge}</td>
+      <td>${d.monthly?'¥'+fmtNum(d.monthly)+'/月':'-'}</td>
+      <td>${d.rate>0?d.rate+'%':'免息'}</td>
+      <td>${d.due||'-'}</td>
+      <td style="color:${statusColor};font-weight:500">${d.status}</td>
+      <td><button class="btn btn-sm" onclick="editDebt(${d.id})">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDebt(${d.id})">删除</button></td>
+    </tr>`;
+  });
+
+  // 负债柱状图
+  const labels=fd.debts.filter(d=>d.status!=='已结清').map(d=>d.name);
+  const vals=fd.debts.filter(d=>d.status!=='已结清').map(d=>d.remain);
+  destroyChart('debtBar');
+  const wh=Math.max(220,(labels.length*50)+80);
+  document.querySelector('#debtBarChart').parentElement.style.height=wh+'px';
+  charts['debtBar']=new Chart(document.getElementById('debtBarChart'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'剩余金额',data:vals,backgroundColor:['#a32d2d','#e24b4a','#f09595','#854f0b','#d4537e'].slice(0,vals.length),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万'}}}}
+  });
+}
+
+function filterDebts(cat){
+  currentDebtFilter=cat;
+  renderDebts();
+}
+
+function renderIncome(){
+  const fd = getCurrentFamilyData();
+  const tbody=document.getElementById('income-tbody');
+  tbody.innerHTML='';
+  const sorted=[...fd.income].sort((a,b)=>b.month.localeCompare(a.month));
+  document.getElementById('income-empty').style.display=sorted.length?'none':'block';
+  sorted.forEach(item=>{
+    const memberName = item.memberId ? (fd.members.find(m=>m.id===item.memberId)?.name || '未知') : '';
+    const memberBadge = memberName ? `<br><span class="tag" style="background:#e6f1fb;color:#185fa5;font-size:10px;padding:1px 5px">${memberName}</span>` : '';
+    tbody.innerHTML+=`<tr>
+      <td>${item.name}</td>
+      <td><span class="tag ${item.type==='收入'?'tag-income':'tag-expense'}">${item.type}</span></td>
+      <td>${item.cat}</td>
+      <td style="color:${item.type==='收入'?'#3b6d11':'#a32d2d'};font-weight:500">${item.type==='收入'?'+':'-'}${fmt(item.amount)}</td>
+      <td>${item.month}${memberBadge}</td>
+      <td style="color:#888780">${item.note||'-'}</td>
+      <td><button class="btn btn-sm" onclick="editIncome(${item.id})">编辑</button> <button class="btn btn-sm btn-danger" onclick="delIncome(${item.id})">删除</button></td>
+    </tr>`;
+  });
+  const inc=fd.income.filter(i=>i.type==='收入'&&i.month==='2026-05').reduce((s,i)=>s+i.amount,0);
+  const exp=fd.income.filter(i=>i.type==='支出'&&i.month==='2026-05').reduce((s,i)=>s+i.amount,0);
+  document.getElementById('income-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">本月总收入</div><div class="metric-value up">${fmt(inc)}</div></div>
+    <div class="metric"><div class="metric-label">本月总支出</div><div class="metric-value warn">${fmt(exp)}</div></div>
+    <div class="metric"><div class="metric-label">本月净结余</div><div class="metric-value blue">${fmt(inc-exp)}</div></div>
+    <div class="metric"><div class="metric-label">储蓄率</div><div class="metric-value">${inc?((inc-exp)/inc*100).toFixed(1):0}%</div></div>
+  `;
+}
+
+function renderAnalysis(){
+  const fd = getCurrentFamilyData();
+  const{totalAsset,totalReceivable,totalReceivableInterest,totalDebt,totalDebtInterest,net,nowIncome,nowExpense,monthlyDebt}=getTotals();
+  const totalReceivableWithInterest = totalReceivable + totalReceivableInterest;
+  const totalDebtWithInterest = totalDebt + totalDebtInterest;
+  const wealthBase=totalAsset+totalReceivableWithInterest;
+  const debtRatio=wealthBase>0?totalDebtWithInterest/wealthBase:0;
+  const dti=nowIncome>0?monthlyDebt/nowIncome:0;
+  const savings=nowIncome>0?(nowIncome-nowExpense)/nowIncome:0;
+  const emergencyFund=nowExpense>0?fd.assets.filter(a=>a.cat==='存款').reduce((s,a)=>s+a.val,0)/nowExpense:0;
+  const overdueRec=fd.receivables.filter(r=>r.status==='逾期未还');
+
+  function score(val,good,ok){
+    if(val<=good)return{label:'优秀',color:'#3b6d11',bg:'#eaf3de'};
+    if(val<=ok)return{label:'良好',color:'#185fa5',bg:'#e6f1fb'};
+    return{label:'需改善',color:'#a32d2d',bg:'#fcebeb'};
+  }
+
+  const dr=score(debtRatio,0.4,0.6);
+  const dt=score(dti,0.3,0.45);
+  const sv=savings>=0.2?{label:'优秀',color:'#3b6d11',bg:'#eaf3de'}:savings>=0.1?{label:'良好',color:'#185fa5',bg:'#e6f1fb'}:{label:'需改善',color:'#a32d2d',bg:'#fcebeb'};
+  const ef=emergencyFund>=6?{label:'充足',color:'#3b6d11',bg:'#eaf3de'}:emergencyFund>=3?{label:'基本',color:'#185fa5',bg:'#e6f1fb'}:{label:'不足',color:'#a32d2d',bg:'#fcebeb'};
+
+  document.getElementById('health-panel').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:16px">
+      <div style="background:${dr.bg};border-radius:8px;padding:14px">
+        <div style="font-size:12px;color:#888780;margin-bottom:4px">资产负债率</div>
+        <div style="font-size:20px;font-weight:500;color:${dr.color}">${(debtRatio*100).toFixed(1)}% <span style="font-size:13px">${dr.label}</span></div>
+        <div style="font-size:12px;color:#888780;margin-top:4px">建议 &lt;40% 为优</div>
+      </div>
+      <div style="background:${dt.bg};border-radius:8px;padding:14px">
+        <div style="font-size:12px;color:#888780;margin-bottom:4px">债务收入比（月）</div>
+        <div style="font-size:20px;font-weight:500;color:${dt.color}">${(dti*100).toFixed(1)}% <span style="font-size:13px">${dt.label}</span></div>
+        <div style="font-size:12px;color:#888780;margin-top:4px">建议月供 &lt;30% 收入</div>
+      </div>
+      <div style="background:${sv.bg};border-radius:8px;padding:14px">
+        <div style="font-size:12px;color:#888780;margin-bottom:4px">月储蓄率</div>
+        <div style="font-size:20px;font-weight:500;color:${sv.color}">${(savings*100).toFixed(1)}% <span style="font-size:13px">${sv.label}</span></div>
+        <div style="font-size:12px;color:#888780;margin-top:4px">建议 &gt;20% 为优</div>
+      </div>
+      <div style="background:${ef.bg};border-radius:8px;padding:14px">
+        <div style="font-size:12px;color:#888780;margin-bottom:4px">应急备用金（月）</div>
+        <div style="font-size:20px;font-weight:500;color:${ef.color}">${emergencyFund.toFixed(1)}个月 <span style="font-size:13px">${ef.label}</span></div>
+        <div style="font-size:12px;color:#888780;margin-top:4px">建议 &gt;6个月支出</div>
+      </div>
+    </div>
+  `;
+
+  // 支出占比饼图
+  const expCats={};
+  DB.income.filter(i=>i.type==='支出'&&i.month==='2026-05').forEach(i=>{expCats[i.cat]=(expCats[i.cat]||0)+i.amount});
+  destroyChart('expensePie');
+  charts['expensePie']=new Chart(document.getElementById('expensePieChart'),{
+    type:'doughnut',
+    data:{labels:Object.keys(expCats),datasets:[{data:Object.values(expCats),backgroundColor:['#a32d2d','#e24b4a','#854f0b','#185fa5','#3b6d11','#533ab7','#0f6e56','#d4537e','#639922','#ba7517'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},padding:6}}}}
+  });
+
+  // 资产负债比率可视化
+  document.getElementById('ratio-panel').innerHTML=`
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#888780;margin-bottom:6px"><span>净资产 ${fmt(net)}</span><span>总资产（含债权+利息）${fmt(wealthBase)}</span></div>
+      <div class="ratio-bar">
+        <div class="ratio-fill" style="width:${pct(net,wealthBase)};background:#185fa5">${pct(net,wealthBase)}</div>
+        <div class="ratio-fill" style="width:${pct(totalDebtWithInterest,wealthBase)};background:#a32d2d">${pct(totalDebtWithInterest,wealthBase)}</div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:12px;margin-top:6px">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#185fa5;border-radius:2px;display:inline-block"></span>净资产</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#a32d2d;border-radius:2px;display:inline-block"></span>负债（含利息）</span>
+      </div>
+    </div>
+    <div class="summary-row"><span style="font-size:13px">房产占总资产</span><span>${pct(DB.assets.filter(a=>a.cat==='不动产').reduce((s,a)=>s+a.val,0),wealthBase)}</span></div>
+    <div class="summary-row"><span style="font-size:13px">金融资产占比</span><span>${pct(DB.assets.filter(a=>a.cat==='金融资产').reduce((s,a)=>s+a.val,0),wealthBase)}</span></div>
+    <div class="summary-row"><span style="font-size:13px">现金及存款占比</span><span>${pct(DB.assets.filter(a=>a.cat==='存款').reduce((s,a)=>s+a.val,0),wealthBase)}</span></div>
+    <div class="summary-row"><span style="font-size:13px">应收债权本息合计</span><span><strong>${fmt(totalReceivableWithInterest)}</strong></span></div>
+    <div class="summary-row"><span style="font-size:13px">负债应付利息</span><span style="color:#854f0b">${fmt(totalDebtInterest)}</span></div>
+    <div class="summary-row"><span style="font-size:13px;font-weight:500">负债本息合计</span><span><strong>${fmt(totalDebtWithInterest)}</strong></span></div>
+  `;
+
+  // 财务建议
+  const advices=[];
+  if(overdueRec.length>0){
+    const totalOverdue=overdueRec.reduce((s,r)=>s+(r.amount-r.returned),0);
+    const overdueInterest=overdueRec.reduce((s,r)=>s+calcAccruedInterest(r),0);
+    advices.push({icon:'\u26a0',title:'存在逾期债权',text:`当前有 ${overdueRec.length} 笔逾期未还债权，本金 ¥${fmtNum(totalOverdue)}，应计利息 ¥${fmtNum(overdueInterest)}，建议及时跟进催收，维护家庭利益。`});
+  }
+  if(totalReceivableInterest>0){
+    const receivableCount=DB.receivables.filter(r=>r.rate>0 && r.status!=='已全额回收').length;
+    advices.push({icon:'\ud83d\udcb8',title:'应收债权利息收益',text:`当前有 ${receivableCount} 笔计息借款，应计利息合计 ¥${fmtNum(totalReceivableInterest)}，到期本息合计 ¥${fmtNum(totalReceivable+totalReceivableInterest)}，请记得到期时向借款人收取。`});
+  }
+  if(totalDebtInterest>0){
+    const highestRate=Math.max(...DB.debts.filter(d=>d.status!=='已结清'&&d.rate>0).map(d=>d.rate));
+    advices.push({icon:'\u26a1',title:'注意负债利息累积',text:`当前负债应付利息合计 ¥${fmtNum(totalDebtInterest)}，其中最高年利率 ${highestRate.toFixed(1)}%，建议优先偿还高息负债，减少利息支出。`});
+  }
+  if(dti>0.43)advices.push({icon:'\u26a1',title:'债务压力偏高',text:`月供收入比达${(dti*100).toFixed(1)}%，建议控制消费贷、信用卡消费，优先偿还高息负债（如信用卡18%年利率）。`});
+  if(debtRatio>0.55)advices.push({icon:'\ud83d\udcca',title:'资产负债率偏高',text:`当前负债率${(debtRatio*100).toFixed(1)}%，房产增值空间支撑，但建议逐步降低杠杆比例。`});
+  if(savings<0.2)advices.push({icon:'\ud83d\udcb0',title:'储蓄率有提升空间',text:`目前月储蓄率${(savings*100).toFixed(1)}%，建议控制娱乐消费，每月目标储蓄${fmt(Math.round(nowIncome*0.2))}。`});
+  if(emergencyFund<6)advices.push({icon:'\ud83d\udc94',title:'应急基金不足',text:`当前应急基金仅够${emergencyFund.toFixed(1)}个月支出，建议积累至少6个月支出（约${fmt(Math.round(nowExpense*6))}）作为备用金。`});
+  advices.push({icon:'\ud83d\udcc8',title:'金融资产配置建议',text:`当前金融资产（股票+基金）占比约${pct(DB.assets.filter(a=>a.cat==='金融资产').reduce((s,a)=>s+a.val,0),wealthBase)}，可考虑定期定投增加权益类配置，分散风险。`});
+  advices.push({icon:'\ud83c\udfe6',title:'房产负债管理',text:`房贷剩余金额大，建议保持正常还款，关注政策窗口（降息/提前还款）机会，综合评估等额本息 vs 等额本金节省的利息总额。`});
+
+  document.getElementById('advice-panel').innerHTML=advices.map(a=>`
+    <div style="display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid #f1efe8">
+      <div style="font-size:20px;flex-shrink:0">${a.icon}</div>
+      <div><div style="font-weight:500;font-size:13px;margin-bottom:4px">${a.title}</div><div style="font-size:13px;color:#5f5e5a;line-height:1.7">${a.text}</div></div>
+    </div>
+  `).join('');
+}
+
+// 资产操作
+function openModal(type){
+  editingId=null;
+  if(type==='asset'){
+    document.getElementById('asset-modal-title').textContent='添加资产';
+    ['a-name','a-val','a-cost','a-date','a-note'].forEach(id=>document.getElementById(id).value='');
+  }
+  if(type==='debt'){
+    document.getElementById('debt-modal-title').textContent='添加负债';
+    ['d-name','d-orig','d-remain','d-start','d-monthly','d-rate','d-due','d-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('d-cat').value='房贷';
+    document.getElementById('d-method').value='等额本息';
+    document.getElementById('d-status').value='正常还款';
+  }
+  if(type==='income'){
+    ['i-name','i-amount','i-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('i-type').value='收入';
+    updateIncomeCategories();
+    updateMemberOptions();
+    document.getElementById('i-month').value='2026-05';
+    document.getElementById('i-member').value='';
+  }
+  if(type==='receivable'){
+    editingId=null;
+    document.getElementById('receivable-modal-title').textContent='添加债权记录';
+    ['r-borrower','r-amount','r-returned','r-rate','r-loanDate','r-dueDate','r-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('r-status').value='正常回收中';
+  }
+  if(type==='member'){
+    editingId=null;
+    document.getElementById('member-modal-title').textContent='添加家庭成员';
+    ['m-name','m-birth','m-income','m-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('m-role').value='户主';
+    document.getElementById('m-relation').value='本人';
+    document.getElementById('m-jobStatus').value='在职';
+  }
+  document.getElementById('modal-'+type).classList.add('open');
+}
+function closeModal(type){document.getElementById('modal-'+type).classList.remove('open')}
+
+function updateIncomeCategories(){
+  const type=document.getElementById('i-type').value;
+  const cats=type==='收入'?INCOME_CATS:EXPENSE_CATS;
+  document.getElementById('i-cat').innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+}
+
+function saveAsset(){
+  const name=document.getElementById('a-name').value.trim();
+  if(!name){alert('请填写资产名称');return;}
+  const item={
+    id:editingId||Date.now(),
+    name,
+    cat:document.getElementById('a-cat').value,
+    val:parseNum(document.getElementById('a-val').value)||0,
+    cost:parseNum(document.getElementById('a-cost').value)||0,
+    date:document.getElementById('a-date').value,
+    note:document.getElementById('a-note').value,
+    familyId: currentFamilyId
+  };
+  if(editingId){
+    const idx=DB.assets.findIndex(a=>a.id===editingId);
+    DB.assets[idx]={...DB.assets[idx],...item};
+    addLog('编辑','资产',item.name,`更新资产：${item.cat}，价值 ¥${fmtNum(item.val)}`);
+  }else{
+    DB.assets.push(item);
+    addLog('新增','资产',item.name,`添加资产：${item.cat}，价值 ¥${fmtNum(item.val)}`);
+  }
+  save();closeModal('asset');renderAssets();
+}
+
+function editAsset(id){
+  editingId=id;
+  const a=DB.assets.find(x=>x.id===id);
+  document.getElementById('asset-modal-title').textContent='编辑资产';
+  document.getElementById('a-name').value=a.name;
+  document.getElementById('a-cat').value=a.cat;
+  document.getElementById('a-val').value=a.val?toLocalStr(a.val):'';
+  document.getElementById('a-cost').value=a.cost?toLocalStr(a.cost):'';
+  document.getElementById('a-date').value=a.date;
+  document.getElementById('a-note').value=a.note||'';
+  document.getElementById('modal-asset').classList.add('open');
+}
+
+function delAsset(id){
+  if(!confirm('确定删除该资产？'))return;
+  const asset = DB.assets.find(a=>a.id===id);
+  const name = asset ? asset.name : '未知资产';
+  DB.assets=DB.assets.filter(a=>a.id!==id);
+  addLog('删除','资产',name,`删除资产`);
+  save();renderAssets();
+}
+
+function saveDebt(){
+  const name=document.getElementById('d-name').value.trim();
+  if(!name){alert('请填写负债名称');return;}
+  const item={
+    id:editingId||Date.now(),
+    name,
+    cat:document.getElementById('d-cat').value,
+    origAmount:parseNum(document.getElementById('d-orig').value)||0,
+    remain:parseNum(document.getElementById('d-remain').value)||0,
+    startDate:document.getElementById('d-start').value,
+    monthly:parseNum(document.getElementById('d-monthly').value)||0,
+    rate:parseFloat(document.getElementById('d-rate').value)||0,
+    method:document.getElementById('d-method').value,
+    due:document.getElementById('d-due').value,
+    status:document.getElementById('d-status').value,
+    note:document.getElementById('d-note').value,
+    familyId: currentFamilyId
+  };
+  if(editingId){
+    const idx=DB.debts.findIndex(d=>d.id===editingId);
+    DB.debts[idx]={...DB.debts[idx],...item};
+    addLog('编辑','负债',item.name,`更新负债：${item.cat}，剩余 ¥${fmtNum(item.remain)}`);
+  }else{
+    DB.debts.push(item);
+    addLog('新增','负债',item.name,`添加负债：${item.cat}，金额 ¥${fmtNum(item.origAmount)}`);
+  }
+  save();closeModal('debt');renderDebts();
+}
+
+function editDebt(id){
+  editingId=id;
+  const d=DB.debts.find(x=>x.id===id);
+  document.getElementById('debt-modal-title').textContent='编辑负债';
+  document.getElementById('d-name').value=d.name;
+  document.getElementById('d-cat').value=d.cat;
+  document.getElementById('d-orig').value=d.origAmount||'';
+  document.getElementById('d-remain').value=d.remain||'';
+  document.getElementById('d-start').value=d.startDate||'';
+  document.getElementById('d-monthly').value=d.monthly||'';
+  document.getElementById('d-rate').value=d.rate||'';
+  document.getElementById('d-method').value=d.method||'等额本息';
+  document.getElementById('d-due').value=d.due||'';
+  document.getElementById('d-status').value=d.status;
+  document.getElementById('d-note').value=d.note||'';
+  document.getElementById('modal-debt').classList.add('open');
+}
+
+function delDebt(id){
+  if(!confirm('确定删除该负债？'))return;
+  const debt = DB.debts.find(d=>d.id===id);
+  const name = debt ? debt.name : '未知负债';
+  DB.debts=DB.debts.filter(d=>d.id!==id);
+  addLog('删除','负债',name,`删除负债`);
+  save();renderDebts();
+}
+
+function saveIncome(){
+  const name=document.getElementById('i-name').value.trim();
+  if(!name){alert('请填写项目名称');return;}
+  const memberIdSelect = document.getElementById('i-member').value;
+  const item={
+    id:editingId||Date.now(),
+    name,
+    type:document.getElementById('i-type').value,
+    cat:document.getElementById('i-cat').value,
+    amount:parseNum(document.getElementById('i-amount').value)||0,
+    month:document.getElementById('i-month').value,
+    note:document.getElementById('i-note').value,
+    memberId: memberIdSelect ? parseInt(memberIdSelect) : null,
+    familyId: currentFamilyId
+  };
+  if(editingId){
+    const idx=DB.income.findIndex(i=>i.id===editingId);
+    DB.income[idx]={...DB.income[idx],...item};
+    addLog('编辑','收支',name,`更新${item.type}记录：${item.cat}，¥${fmtNum(item.amount)}`);
+  }else{
+    DB.income.push(item);
+    addLog('新增','收支',name,`添加${item.type}记录：${item.cat}，¥${fmtNum(item.amount)}`);
+  }
+  save();closeModal('income');renderIncome();
+}
+
+function editIncome(id){
+  editingId=id;
+  const item=DB.income.find(x=>x.id===id);
+  document.getElementById('i-name').value=item.name;
+  document.getElementById('i-type').value=item.type;
+  updateIncomeCategories();
+  updateMemberOptions();
+  document.getElementById('i-cat').value=item.cat;
+  document.getElementById('i-amount').value=item.amount?toLocalStr(item.amount):'';
+  document.getElementById('i-month').value=item.month;
+  document.getElementById('i-member').value=item.memberId ? String(item.memberId) : '';
+  document.getElementById('i-note').value=item.note||'';
+  document.getElementById('modal-income').classList.add('open');
+}
+
+function delIncome(id){
+  if(!confirm('确定删除该记录？'))return;
+  const item = DB.income.find(i=>i.id===id);
+  const name = item ? item.name : '未知';
+  DB.income=DB.income.filter(i=>i.id!==id);
+  addLog('删除','收支',name,`删除${item?.type || ''}记录`);
+  save();renderIncome();
+}
+
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open')});
+});
+
+updateIncomeCategories();
+updateMemberOptions();
+renderOverview(); // 基础渲染，待 auth 完成后再 full render
+
+// 登录状态检查（异步）
+(async () => {
+  const loggedIn = await checkAuth();
+  if (!loggedIn) {
+    document.getElementById('loginPage').classList.remove('hidden');
+  }
+})();
+</script>
 </body>
 </html>
