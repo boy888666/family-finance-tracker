@@ -693,7 +693,7 @@ async function apiFetch(path, options = {}) {
     const user = users.find(u => u.username === body.username && u.password === body.password);
     if (!user) throw new Error('用户名或密码错误');
     const token = 'local_' + user.id + '_' + Date.now();
-    return { token, user: { id: user.id, username: user.username, name: user.name, role: user.role, familyId: user.familyId } };
+    return { token, user: { id: user.id, username: user.username, displayName: user.name || user.username, name: user.name || user.username, role: user.role, familyId: user.familyId } };
   }
 
   // GET /api/families
@@ -972,7 +972,7 @@ async function checkAuth(){
 }
 
 // 执行登录
-async function doLogin(){
+async async function doLogin(){
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   if(!username || !password){
