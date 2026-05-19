@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -109,7 +109,7 @@
       <label>密码</label>
       <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:15px" onclick="doLogin()">登 录</button>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;padding:12px;font-size:15px" onclick="doLogin()">登 录</button>
     <div class="login-footer">
       <div style="margin-top:6px">
         <button class="btn btn-sm" onclick="initDatabase()" id="initDbBtn" style="color:#888780;border-color:#e0e0e0;font-size:11px">⚙️ 初始化数据库（首次部署点击）</button>
@@ -759,6 +759,14 @@ async function apiFetch(path, options = {}) {
 
 // ========== 多租户+用户认证系统 ==========
 let FAMILIES = [];
+let DB = JSON.parse(localStorage.getItem('family_finance_v6') || 'null') || JSON.parse(JSON.stringify(DEFAULT_DATA));
+if(!DB) DB = { members: [], assets: [], debts: [], receivables: [], income: [], logs: [] };
+if(!DB.members) DB.members = [];
+if(!DB.assets) DB.assets = [];
+if(!DB.debts) DB.debts = [];
+if(!DB.receivables) DB.receivables = [];
+if(!DB.income) DB.income = [];
+if(!DB.logs) DB.logs = [];
 let USERS = [];
 let currentUser = null;
 let currentFamilyId = null;
@@ -927,7 +935,7 @@ function getCurrentFamily(){
 }
 
 // 检查是否已登录（异步）
-async function checkAuth(){
+async async function checkAuth(){
   const token = sessionStorage.getItem('ff_token');
   const savedUser = sessionStorage.getItem('ff_user');
   if(token && savedUser){
