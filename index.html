@@ -935,7 +935,7 @@ function getCurrentFamily(){
 }
 
 // 检查是否已登录（异步）
-async async function checkAuth(){
+async function checkAuth(){
   const token = sessionStorage.getItem('ff_token');
   const savedUser = sessionStorage.getItem('ff_user');
   if(token && savedUser){
