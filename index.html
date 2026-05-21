@@ -1555,7 +1555,7 @@ function updateMemberIdOptions(){
   selects.forEach(s => { if(s) s.innerHTML = options; });
 }
 
-let DB = JSON.parse(localStorage.getItem('family_finance_v6') || 'null') || JSON.parse(JSON.stringify(DEFAULT_DATA));
+//  DB = JSON.parse(localStorage.getItem('family_finance_v6') || 'null') || JSON.parse(JSON.stringify(DEFAULT_DATA));
 // 兼容旧版本数据：确保 members 数组存在
 if(!DB.members) DB.members = [];
 // 兼容旧版本数据：确保 income 项有 memberId 字段
